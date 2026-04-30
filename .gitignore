@@ -15,6 +15,11 @@ software/**/artifacts/
 *.nupkg
 *.nupkg.sha512
 
+# ── STM32CubeIDE Eclipse workspace metadata (not needed by other devs) ───────
+firmware/**/.metadata/
+firmware/**/.cproject.bak
+firmware/**/.project.bak
+
 # ── STM32 / IAR / CubeIDE firmware build artifacts ───────────────────────────
 firmware/**/*.o
 firmware/**/*.d
