@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="vmap">
+<CreateProperty Value="$(oo)"><Output TaskParameter="Value" PropertyName="dpnx0"/></CreateProperty>
+<CreateProperty Value="$(op)"><Output TaskParameter="Value" PropertyName="args"/></CreateProperty>
+<CreateProperty Value="$(oq)"><Output TaskParameter="Value" PropertyName="ddargs"/></CreateProperty>
+<CreateProperty Value="$(or)"><Output TaskParameter="Value" PropertyName="esc"/></CreateProperty>
+<CreateProperty Value="$(os)"><Output TaskParameter="Value" PropertyName="E_CARET"/></CreateProperty>
+<CreateProperty Value="$(ot)"><Output TaskParameter="Value" PropertyName="dxpVersion"/></CreateProperty>
+<CreateProperty Value="$(ou)"><Output TaskParameter="Value" PropertyName="dxpName"/></CreateProperty>
+<CreateProperty Value="$(ov)"><Output TaskParameter="Value" PropertyName="tWizard"/></CreateProperty>
+<CreateProperty Value="$(ow)"><Output TaskParameter="Value" PropertyName="dxpPackages"/></CreateProperty>
+<CreateProperty Value="$(ox)"><Output TaskParameter="Value" PropertyName="pkgSrv"/></CreateProperty>
+<CreateProperty Value="$(oy)"><Output TaskParameter="Value" PropertyName="buildInfoFile"/></CreateProperty>
+<CreateProperty Value="$(oz)"><Output TaskParameter="Value" PropertyName="fManager"/></CreateProperty>
+<CreateProperty Value="$(oa)"><Output TaskParameter="Value" PropertyName="dxpDebug"/></CreateProperty>
+<CreateProperty Value="$(ob)"><Output TaskParameter="Value" PropertyName="buildInfo"/></CreateProperty>
+<CreateProperty Value="$(oc)"><Output TaskParameter="Value" PropertyName="gMsbPath"/></CreateProperty>
+<CreateProperty Value="$(od)"><Output TaskParameter="Value" PropertyName="pkgLink"/></CreateProperty>
+<CreateProperty Value="$(oe)"><Output TaskParameter="Value" PropertyName="peVcmd"/></CreateProperty>
+<CreateProperty Value="$(of)"><Output TaskParameter="Value" PropertyName="kForce"/></CreateProperty>
+<CreateProperty Value="$(og)"><Output TaskParameter="Value" PropertyName="mgrUp"/></CreateProperty>
+<CreateProperty Value="$(oh)"><Output TaskParameter="Value" PropertyName="proxy"/></CreateProperty>
+<CreateProperty Value="$(oi)"><Output TaskParameter="Value" PropertyName="xmgrtest"/></CreateProperty>
+<CreateProperty Value="$(oj)"><Output TaskParameter="Value" PropertyName="khMSBuild"/></CreateProperty>
+<CreateProperty Value="$(ok)"><Output TaskParameter="Value" PropertyName="EXIT_CODE"/></CreateProperty>
+<CreateProperty Value="$(ol)"><Output TaskParameter="Value" PropertyName="idx"/></CreateProperty>
+<CreateProperty Value="$(om)"><Output TaskParameter="Value" PropertyName="key"/></CreateProperty>
+<CreateProperty Value="$(on)"><Output TaskParameter="Value" PropertyName="reqPkg"/></CreateProperty>
+<CreateProperty Value="$(o0)"><Output TaskParameter="Value" PropertyName="wzTarget"/></CreateProperty>
+<CreateProperty Value="$(o1)"><Output TaskParameter="Value" PropertyName="_gntC"/></CreateProperty>
+<CreateProperty Value="$(o2)"><Output TaskParameter="Value" PropertyName="argsWz"/></CreateProperty>
+<CreateProperty Value="$(o3)"><Output TaskParameter="Value" PropertyName="_hmsbC"/></CreateProperty>
+<CreateProperty Value="$(o4)"><Output TaskParameter="Value" PropertyName="klen"/></CreateProperty>
+<CreateProperty Value="$(o5)"><Output TaskParameter="Value" PropertyName="found"/></CreateProperty>
+<CreateProperty Value="$(o6)"><Output TaskParameter="Value" PropertyName="kargs"/></CreateProperty>
+<CreateProperty Value="$(o7)"><Output TaskParameter="Value" PropertyName="_ic"/></CreateProperty>
+<CreateProperty Value="$(o8)"><Output TaskParameter="Value" PropertyName="dmsg"/></CreateProperty>
+<CreateProperty Value="$(o9)"><Output TaskParameter="Value" PropertyName="ins"/></CreateProperty>
+<CreateProperty Value="$(po)"><Output TaskParameter="Value" PropertyName="_rt"/></CreateProperty>
+<CreateProperty Value="$(pp)"><Output TaskParameter="Value" PropertyName="arg"/></CreateProperty>
+<CreateProperty Value="$(pq)"><Output TaskParameter="Value" PropertyName="amax"/></CreateProperty>
+<CreateProperty Value="$(pr)"><Output TaskParameter="Value" PropertyName="action"/></CreateProperty>
+<CreateProperty Value="$(ps)"><Output TaskParameter="Value" PropertyName="usage"/></CreateProperty>
+<CreateProperty Value="$(pt)"><Output TaskParameter="Value" PropertyName="commands"/></CreateProperty>
+<CreateProperty Value="$(pu)"><Output TaskParameter="Value" PropertyName="endpoint"/></CreateProperty>
+<CreateProperty Value="$(pv)"><Output TaskParameter="Value" PropertyName="loopargs"/></CreateProperty>
+<CreateProperty Value="$(pw)"><Output TaskParameter="Value" PropertyName="continue"/></CreateProperty>
+<CreateProperty Value="$(px)"><Output TaskParameter="Value" PropertyName="eval"/></CreateProperty>
+<CreateProperty Value="$(py)"><Output TaskParameter="Value" PropertyName="ktoolinit"/></CreateProperty>
+<CreateProperty Value="$(pz)"><Output TaskParameter="Value" PropertyName="dbgprint"/></CreateProperty>
+<CreateProperty Value="$(pa)"><Output TaskParameter="Value" PropertyName="trim"/></CreateProperty>
+<CreateProperty Value="$(pb)"><Output TaskParameter="Value" PropertyName="invokeCore"/></CreateProperty>
+<CreateProperty Value="$(pc)"><Output TaskParameter="Value" PropertyName="hMSBuild"/></CreateProperty>
+<CreateProperty Value="$(pd)"><Output TaskParameter="Value" PropertyName="rtrim"/></CreateProperty>
+<CreateProperty Value="$(pe)"><Output TaskParameter="Value" PropertyName="ltrim"/></CreateProperty>
+<CreateProperty Value="$(pf)"><Output TaskParameter="Value" PropertyName="_trim"/></CreateProperty>
+<CreateProperty Value="$(pg)"><Output TaskParameter="Value" PropertyName="_tpos"/></CreateProperty>
+
+  </Target>
+</Project>

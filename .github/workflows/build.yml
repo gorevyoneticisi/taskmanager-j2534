@@ -1,0 +1,69 @@
+name: Build J2534 DLL
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - "software/**"
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - "software/**"
+  workflow_dispatch:          # allow manual trigger from the Actions tab
+
+jobs:
+  build-dll:
+    name: MSBuild Release x86
+    runs-on: windows-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up MSBuild ────────────────────────────────────────────────────
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # ── 3. NuGet restore (needed so NuGet.targets validates RuntimeIdentifiers)
+      - name: NuGet restore
+        working-directory: software/TaskmanagerBridge
+        run: |
+          nuget restore TaskmanagerBridge.sln
+
+      # ── 4. Build Release|x86 ─────────────────────────────────────────────────
+      - name: Build
+        working-directory: software/TaskmanagerBridge
+        run: |
+          msbuild TaskmanagerBridge.sln `
+            /p:Configuration=Release `
+            /p:Platform=x86 `
+            /p:DllExportNoRestore=true `
+            /p:TreatWarningsAsErrors=true `
+            /v:minimal
+
+      # ── 5. Verify the DLL is an x86 PE32 export library ─────────────────────
+      - name: Verify exports
+        working-directory: software/TaskmanagerBridge
+        shell: pwsh
+        run: |
+          $dll = "TaskmanagerBridge\bin\x86\Release\TaskmanagerBridge.dll"
+          if (-not (Test-Path $dll)) {
+            Write-Error "DLL not found at $dll"; exit 1
+          }
+          $bytes    = [System.IO.File]::ReadAllBytes($dll)
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
+          $machine  = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
+          if ($machine -ne 0x014C) {
+            Write-Error "Not an x86 PE32 (machine=0x{0:X4})" -f $machine; exit 1
+          }
+          Write-Host "✓ x86 PE32 confirmed, size $($bytes.Length) bytes"
+
+      # ── 6. Upload DLL as a build artifact ────────────────────────────────────
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskmanagerBridge-x86-Release
+          path: software/TaskmanagerBridge/TaskmanagerBridge/bin/x86/Release/TaskmanagerBridge.dll
+          if-no-files-found: error
+          retention-days: 30
