@@ -1,0 +1,34 @@
+# ── Visual Studio ────────────────────────────────────────────────────────────
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build output
+software/**/bin/
+software/**/obj/
+software/**/artifacts/
+
+# NuGet package archives (extracted package content IS committed
+# so DllExport.bat works offline; we only exclude the archive blobs)
+*.nupkg
+*.nupkg.sha512
+
+# ── STM32 / IAR / CubeIDE firmware build artifacts ───────────────────────────
+firmware/**/*.o
+firmware/**/*.d
+firmware/**/*.su
+firmware/**/*.elf
+firmware/**/*.hex
+firmware/**/*.bin
+firmware/**/*.map
+firmware/**/*.list
+firmware/**/Debug/
+firmware/**/Release/
+firmware/**/.settings/
+
+# ── OS noise ─────────────────────────────────────────────────────────────────
+Thumbs.db
+.DS_Store
+desktop.ini
