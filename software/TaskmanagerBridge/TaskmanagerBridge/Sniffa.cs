@@ -56,7 +56,7 @@ namespace TaskmanagerBridge
             }
             catch
             {
-                // Fail silently — logging must never affect J2534 timing.
+                // Fail silently; logging must never affect J2534 timing.
             }
         }
 
