@@ -99,7 +99,7 @@ namespace TaskmanagerOBD2Reader
         public bool RequestPid(byte pid, out byte a, out byte b)
         {
             a = 0; b = 0;
-            byte[] req = { 0x02, 0x01, pid };
+            byte[] req = { 0x01, pid };
             if (!WriteObd(req)) return false;
 
             return ReadPidResponse(pid, out a, out b);
@@ -113,11 +113,11 @@ namespace TaskmanagerOBD2Reader
             {
                 byte[] resp = ReadMsg(200);
                 if (resp == null) continue;
-                // resp[0..3] = CAN ID, resp[4] = len, resp[5] = 0x41, resp[6] = pid, resp[7] = A, resp[8] = B
-                if (resp.Length >= 8 && resp[5] == 0x41 && resp[6] == pid)
+                // resp[0..3] = CAN ID, resp[4] = 0x41, resp[5] = pid, resp[6] = A, resp[7] = B
+                if (resp.Length >= 7 && resp[4] == 0x41 && resp[5] == pid)
                 {
-                    a = resp[7];
-                    b = (resp.Length >= 9) ? resp[8] : (byte)0;
+                    a = resp[6];
+                    b = (resp.Length >= 8) ? resp[7] : (byte)0;
                     return true;
                 }
             }
@@ -127,27 +127,27 @@ namespace TaskmanagerOBD2Reader
         // Read DTCs (Mode 03). Returns list of decoded DTC strings.
         public List<string> ReadDtcs()
         {
-            byte[] req = { 0x01, 0x03 };
+            byte[] req = { 0x03 };
             if (!WriteObd(req)) return new List<string>();
 
             byte[] resp = ReadMsg(1000);
-            if (resp == null || resp.Length < 6) return new List<string>();
+            if (resp == null || resp.Length < 5) return new List<string>();
 
-            // resp[4] = len, resp[5] = 0x43, resp[6] = count, resp[7..] = DTC pairs
-            if (resp[5] != 0x43) return new List<string>();
-            int count = resp[6];
+            // resp[0..3] = CAN ID, resp[4] = 0x43, resp[5] = count, resp[6..] = DTC pairs
+            if (resp[4] != 0x43) return new List<string>();
+            int count = resp[5];
             if (count == 0) return new List<string>();
 
-            return PidDecoder.DecodeDtcs(resp, 7, count * 2);
+            return PidDecoder.DecodeDtcs(resp, 6, count * 2);
         }
 
         // Clear DTCs (Mode 04).
         public bool ClearDtcs()
         {
-            byte[] req = { 0x01, 0x04 };
+            byte[] req = { 0x04 };
             if (!WriteObd(req)) return false;
             byte[] resp = ReadMsg(1000);
-            return resp != null && resp.Length >= 6 && resp[5] == 0x44;
+            return resp != null && resp.Length >= 5 && resp[4] == 0x44;
         }
 
         // Read battery voltage via PassThruIoctl READ_VBATT.
@@ -156,7 +156,7 @@ namespace TaskmanagerOBD2Reader
             IntPtr pOut = Marshal.AllocHGlobal(4);
             try
             {
-                int r = J2534Api.Ioctl(_channelId, 0x06 /* READ_VBATT */, IntPtr.Zero, pOut);
+                int r = J2534Api.Ioctl(_channelId, J2534Api.READ_VBATT, IntPtr.Zero, pOut);
                 if (r != J2534Err.STATUS_NOERROR) return 0;
                 uint mv = (uint)Marshal.ReadInt32(pOut);
                 return mv / 1000.0;
@@ -167,7 +167,7 @@ namespace TaskmanagerOBD2Reader
         // Read VIN (Mode 09, PID 0x02).
         public string ReadVin()
         {
-            byte[] req = { 0x02, 0x09, 0x02 };
+            byte[] req = { 0x09, 0x02 };
             if (!WriteObd(req)) return null;
 
             // VIN can be multi-frame; collect up to 3 responses
@@ -177,10 +177,10 @@ namespace TaskmanagerOBD2Reader
             {
                 byte[] resp = ReadMsg(300);
                 if (resp == null) break;
-                if (resp.Length >= 6 && resp[5] == 0x49 && resp[6] == 0x02)
+                // resp[0..3] = CAN ID, resp[4] = 0x49, resp[5] = 0x02, resp[6] = msg count, resp[7..] = VIN bytes
+                if (resp.Length >= 7 && resp[4] == 0x49 && resp[5] == 0x02)
                 {
-                    // resp[7] = frame number (ignore), resp[8..] = VIN bytes
-                    for (int i = 8; i < resp.Length; i++) vinBytes.Add(resp[i]);
+                    for (int i = 7; i < resp.Length; i++) vinBytes.Add(resp[i]);
                     if (vinBytes.Count >= 17) break;
                 }
             }
