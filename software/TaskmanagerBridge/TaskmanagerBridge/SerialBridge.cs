@@ -15,12 +15,10 @@ namespace TaskmanagerBridge
     //     XOR = ID_H ^ ID_L ^ D0 ^ ... ^ Dn
     //
     //   STM32 → PC (received CAN frame):
-    //     [0xBB][LEN][ID_H][ID_L][D0..Dn]
+    //     [0xBB][LEN][ID_H][ID_L][D0..Dn][XOR]
     //     LEN = 1..8
-    //     NOTE: no checksum on the v1 receive path. The STM32 guarantees CAN
-    //     framing but not the UART link. A byte dropped due to FTDI buffer
-    //     overrun or EMI will silently produce a corrupt frame. This is fixed
-    //     in firmware v2 by adding an XOR byte at the end of every RX packet.
+    //     XOR = ID_H ^ ID_L ^ D0 ^ ... ^ Dn
+    //     The DLL verifies XOR and drops frames that fail the check.
     //
     // ── Firmware v2 (planned, 29-bit IDs + baud rate switching) ──────────
     //
@@ -159,7 +157,7 @@ namespace TaskmanagerBridge
         }
 
         // ── Background RX parser ──────────────────────────────────────────────
-        // Parses firmware v1 receive frames: [0xBB][LEN][ID_H][ID_L][D0..Dn]
+        // Parses firmware v1 receive frames: [0xBB][LEN][ID_H][ID_L][D0..Dn][XOR]
         private static void RxWorker()
         {
             int    state   = 0;
@@ -216,15 +214,27 @@ namespace TaskmanagerBridge
                     case 4: // Data bytes
                         frmData[dataIdx++] = b;
                         if (dataIdx >= frmLen)
-                        {
-                            uint canId = ((uint)idHigh << 8) | idLow;
-                            var frame  = new CanFrame(canId, frmData);
-                            RxQueue.TryAdd(frame);
-                            Sniffa.LogTraffic("RX", canId, frmData);
-                            Interlocked.Increment(ref _framesRx);
-                            state = 0;
-                        }
+                            state = 5;
                         break;
+
+                    case 5: // XOR checksum byte
+                    {
+                        byte expected = (byte)(idHigh ^ idLow);
+                        for (int i = 0; i < frmLen; i++) expected ^= frmData[i];
+                        if (b != expected)
+                        {
+                            Interlocked.Increment(ref _parseErrors);
+                            state = 0;
+                            break;
+                        }
+                        uint canId = ((uint)idHigh << 8) | idLow;
+                        var frame  = new CanFrame(canId, frmData);
+                        RxQueue.TryAdd(frame);
+                        Sniffa.LogTraffic("RX", canId, frmData);
+                        Interlocked.Increment(ref _framesRx);
+                        state = 0;
+                        break;
+                    }
                 }
             }
         }
