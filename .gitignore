@@ -33,6 +33,9 @@ firmware/**/Debug/
 firmware/**/Release/
 firmware/**/.settings/
 
+# ── Claude Code ──────────────────────────────────────────────────────────────
+.claude/
+
 # ── OS noise ─────────────────────────────────────────────────────────────────
 Thumbs.db
 .DS_Store
