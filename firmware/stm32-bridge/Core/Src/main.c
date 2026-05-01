@@ -385,18 +385,22 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
 
         // Wrap the incoming CAN frame in a serial header and send to Windows (FT232H)
-        // Format: [0xBB] [Length] [ID_High] [ID_Low] [Data...]
-        uart_tx_buffer[0] = 0xBB; // Start byte for RX data
+        // Format: [0xBB] [Length] [ID_High] [ID_Low] [Data...] [XOR]
+        // XOR = ID_High ^ ID_Low ^ D0 ^ ... ^ Dn
+        uart_tx_buffer[0] = 0xBB;
         uart_tx_buffer[1] = RxHeader.DLC;
         uart_tx_buffer[2] = (RxHeader.StdId >> 8) & 0xFF;
         uart_tx_buffer[3] = RxHeader.StdId & 0xFF;
 
+        uint8_t xor_val = uart_tx_buffer[2] ^ uart_tx_buffer[3];
         for (int i = 0; i < RxHeader.DLC; i++)
         {
             uart_tx_buffer[4 + i] = RxData[i];
+            xor_val ^= RxData[i];
         }
+        uart_tx_buffer[4 + RxHeader.DLC] = xor_val;
 
-        HAL_UART_Transmit_IT(&huart1, uart_tx_buffer, 4 + RxHeader.DLC);
+        HAL_UART_Transmit_IT(&huart1, uart_tx_buffer, 5 + RxHeader.DLC);
     }
 }
 /* USER CODE END 4 */
