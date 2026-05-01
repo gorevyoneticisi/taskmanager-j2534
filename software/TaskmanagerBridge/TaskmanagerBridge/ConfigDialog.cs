@@ -7,7 +7,7 @@ namespace TaskmanagerBridge
 {
     /// <summary>
     /// Configuration dialog shown when PassThruOpen is called.
-    /// Built entirely in code — no .designer file needed in a DLL project.
+    /// Built entirely in code, no .designer file needed in a DLL project.
     /// Must be shown on an STA thread (PassThruAPI.ShowConfig handles this).
     /// </summary>
     internal class ConfigDialog : Form
@@ -32,7 +32,7 @@ namespace TaskmanagerBridge
 
         private void BuildUI()
         {
-            Text = "Taskmanager J2534 Bridge — Configuration";
+            Text = "Taskmanager J2534 Bridge: Configuration";
             Size = new Size(430, 350);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -54,7 +54,7 @@ namespace TaskmanagerBridge
 
             var lblSub = new Label
             {
-                Text = "Toyota Techstream · VW ODIS · Ford IDS · VCDS · Any J2534 app",
+                Text = "Toyota Techstream · VW ODIS · Ford IDS · BMW ISTA · Any J2534 app",
                 Location = new Point(14, 42),
                 Size = new Size(390, 16),
                 Font = new Font("Segoe UI", 7.5f, FontStyle.Italic),
@@ -102,9 +102,9 @@ namespace TaskmanagerBridge
             };
             cmbBaud.Items.AddRange(new object[]
             {
-                "500 kbps  — Standard OBD2 / VW / Toyota",
-                "250 kbps  — GM, older CAN networks",
-                "1000 kbps — High speed / CAN FD"
+                "500 kbps  - Standard OBD2 / VW / Toyota",
+                "250 kbps  - GM, older CAN networks",
+                "1000 kbps - High speed / CAN FD"
             });
             cmbBaud.SelectedIndex = 0;
 
@@ -135,7 +135,7 @@ namespace TaskmanagerBridge
 
             lblStatus = new Label
             {
-                Text = "Ready — select your FT232H COM port and click Connect.",
+                Text = "Ready. Select your FT232H COM port and click Connect.",
                 Location = new Point(34, 220),
                 Size = new Size(370, 18),
                 ForeColor = Color.Silver
@@ -242,7 +242,7 @@ namespace TaskmanagerBridge
                 using (var test = new SerialPort(port, 921600, Parity.None, 8, StopBits.One))
                 {
                     test.Open();
-                    // Port opened successfully — close immediately, PassThruAPI will open it for real
+                    // Port opened successfully; close immediately, PassThruAPI will open it for real
                 }
             }
             catch (Exception ex)
