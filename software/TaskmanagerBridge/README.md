@@ -195,16 +195,6 @@ TaskmanagerBridge/
 
 ---
 
-## Saving your session with Claude Code
-
-To regenerate or update this README in a future session:
-
-```
-/init
-```
-
----
-
 ## License
 
 MIT — see `LICENSE` file (add one before publishing).
