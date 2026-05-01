@@ -468,6 +468,17 @@ The MCU exposes UART at **921600 baud 8N1**, no hardware flow control.
 
 ---
 
+## Support
+
+If this project saved you money on a dealership diagnostic bill, consider buying me a coffee.
+
+- **Revolut:** `@gorevyoneticisi`
+- **PayPal:** `gorevyoneticisi`
+
+For custom builds, hardware questions, or integration help with a specific diagnostic tool, open an issue or reach out directly via GitHub.
+
+---
+
 ## License
 
 **Proprietary - All Rights Reserved.**
