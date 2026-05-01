@@ -47,24 +47,29 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 CAN_TxHeaderTypeDef TxHeader;
 CAN_RxHeaderTypeDef RxHeader;
+IWDG_HandleTypeDef  hiwdg;
 uint32_t TxMailbox;
 uint8_t RxData[8];
 
 // UART RX State Machine Variables
 uint8_t uart_rx_byte;
 uint8_t rx_state = 0;
-uint8_t rx_can_id_high = 0;   // CAN ID high byte received from the DLL (bits 10-8)
-uint8_t rx_can_id_low  = 0;   // CAN ID low byte received from the DLL (bits 7-0)
+uint8_t rx_can_id_high = 0;
+uint8_t rx_can_id_low  = 0;
 uint8_t expected_length = 0;
 uint8_t payload_buffer[8];
 uint8_t payload_idx = 0;
 uint8_t checksum_calc = 0;
 
-// Static TX buffer for CAN->UART responses.
-// MUST be static — HAL_UART_Transmit_IT is asynchronous. A local variable
-// declared inside the ISR callback would be freed before the DMA/interrupt
-// finishes sending, causing random data corruption on the PC side.
-static uint8_t uart_tx_buffer[13]; // 0xBB + len + 2 ID bytes + 8 data bytes + 1 spare
+// CAN→UART ring buffer — 8 slots of 13 bytes each.
+// Prevents buffer corruption when a second CAN frame arrives before
+// HAL_UART_Transmit_IT (async) has finished sending the first.
+#define TX_RING_SLOTS 8
+static uint8_t          uart_tx_ring[TX_RING_SLOTS][13];
+static uint8_t          uart_tx_ring_len[TX_RING_SLOTS];
+static volatile uint8_t tx_wr   = 0;
+static volatile uint8_t tx_rd   = 0;
+static volatile uint8_t tx_busy = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -129,11 +134,20 @@ int main(void)
   // 2. Start the CAN peripheral
   HAL_CAN_Start(&hcan1);
 
-  // 3. Enable CAN RX Interrupt
-  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+  // 3. Enable CAN RX and error interrupts (bus-off recovery via HAL_CAN_ErrorCallback)
+  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING
+                                     | CAN_IT_ERROR
+                                     | CAN_IT_BUSOFF
+                                     | CAN_IT_LAST_ERROR_CODE);
 
   // 4. Start listening to the FT232H via UART (1 byte at a time)
   HAL_UART_Receive_IT(&huart1, &uart_rx_byte, 1);
+
+  // 5. IWDG: ~2 s watchdog (LSI ~32 kHz, prescaler 32 → 1 kHz tick, reload 2000)
+  hiwdg.Instance       = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
+  hiwdg.Init.Reload    = 2000;
+  HAL_IWDG_Init(&hiwdg);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -143,6 +157,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    HAL_IWDG_Refresh(&hiwdg);
+    HAL_Delay(200);
   }
   /* USER CODE END 3 */
 }
@@ -329,11 +345,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                 break;
             case 4: // Get Length
                 expected_length = uart_rx_byte;
-                if (expected_length > 8) rx_state = 0; // Error, CAN max is 8
+                if (expected_length > 8) rx_state = 0;
                 else {
                     payload_idx = 0;
-                    checksum_calc = 0;
-                    if (expected_length == 0) rx_state = 6; // Zero length payload
+                    // checksum_calc retains ID_H ^ ID_L accumulated in cases 2-3
+                    if (expected_length == 0) rx_state = 6;
                     else rx_state = 5;
                 }
                 break;
@@ -366,41 +382,74 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
-// Callback: Triggered when the STM32 receives a frame from the Vehicle (CAN)
+// Callback: CAN frame received from vehicle → queue into ring buffer → send to PC
 //
 // Packet format (STM32 -> PC):
-//   [0xBB]  Header byte for RX data
-//   [LEN]   Data length
-//   [ID_H]  CAN ID high byte (bits 10-8)
-//   [ID_L]  CAN ID low byte  (bits 7-0)
-//   [D0..n] CAN data bytes
+//   [0xBB] [LEN] [ID_H] [ID_L] [D0..Dn] [XOR]
+//   XOR = ID_H ^ ID_L ^ D0 ^ ... ^ Dn
 //
-// uart_tx_buffer is declared static in the private variables section.
-// It must NOT be a local variable here — HAL_UART_Transmit_IT sends
-// asynchronously and the buffer must remain valid until transmission completes.
+// Ring buffer (TX_RING_SLOTS slots) prevents overwrite when a second CAN frame
+// arrives before HAL_UART_Transmit_IT has finished sending the first.
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
     if (hcan->Instance == CAN1)
     {
         HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
 
-        // Wrap the incoming CAN frame in a serial header and send to Windows (FT232H)
-        // Format: [0xBB] [Length] [ID_High] [ID_Low] [Data...] [XOR]
-        // XOR = ID_High ^ ID_Low ^ D0 ^ ... ^ Dn
-        uart_tx_buffer[0] = 0xBB;
-        uart_tx_buffer[1] = RxHeader.DLC;
-        uart_tx_buffer[2] = (RxHeader.StdId >> 8) & 0xFF;
-        uart_tx_buffer[3] = RxHeader.StdId & 0xFF;
+        uint8_t next_wr = (tx_wr + 1) % TX_RING_SLOTS;
+        if (next_wr == tx_rd) return; // ring full — drop frame rather than corrupt
 
-        uint8_t xor_val = uart_tx_buffer[2] ^ uart_tx_buffer[3];
+        uint8_t *buf = uart_tx_ring[tx_wr];
+        buf[0] = 0xBB;
+        buf[1] = RxHeader.DLC;
+        buf[2] = (RxHeader.StdId >> 8) & 0xFF;
+        buf[3] =  RxHeader.StdId       & 0xFF;
+
+        uint8_t xor_val = buf[2] ^ buf[3];
         for (int i = 0; i < RxHeader.DLC; i++)
         {
-            uart_tx_buffer[4 + i] = RxData[i];
-            xor_val ^= RxData[i];
+            buf[4 + i] = RxData[i];
+            xor_val   ^= RxData[i];
         }
-        uart_tx_buffer[4 + RxHeader.DLC] = xor_val;
+        buf[4 + RxHeader.DLC]      = xor_val;
+        uart_tx_ring_len[tx_wr]    = 5 + RxHeader.DLC;
+        tx_wr = next_wr;
 
-        HAL_UART_Transmit_IT(&huart1, uart_tx_buffer, 5 + RxHeader.DLC);
+        if (!tx_busy)
+        {
+            tx_busy = 1;
+            HAL_UART_Transmit_IT(&huart1, uart_tx_ring[tx_rd], uart_tx_ring_len[tx_rd]);
+        }
+    }
+}
+
+// Callback: UART TX complete — advance ring buffer and send next frame if queued
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1)
+    {
+        tx_rd = (tx_rd + 1) % TX_RING_SLOTS;
+        if (tx_rd != tx_wr)
+            HAL_UART_Transmit_IT(&huart1, uart_tx_ring[tx_rd], uart_tx_ring_len[tx_rd]);
+        else
+            tx_busy = 0;
+    }
+}
+
+// Callback: CAN peripheral error — recover from bus-off by restarting CAN
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
+{
+    if (hcan->Instance == CAN1)
+    {
+        if (hcan->ErrorCode & HAL_CAN_ERROR_BOF)
+        {
+            HAL_CAN_Stop(hcan);
+            HAL_CAN_Start(hcan);
+            HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO0_MSG_PENDING
+                                             | CAN_IT_ERROR
+                                             | CAN_IT_BUSOFF
+                                             | CAN_IT_LAST_ERROR_CODE);
+        }
     }
 }
 /* USER CODE END 4 */

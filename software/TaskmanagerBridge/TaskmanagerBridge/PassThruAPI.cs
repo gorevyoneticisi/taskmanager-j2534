@@ -826,13 +826,14 @@ namespace TaskmanagerBridge
         // ═════════════════════════════════════════════════════════════════════
         private static void RouterWorker()
         {
+            var snapshot = new List<ChannelState>();
             while (_routerRunning)
             {
                 CanFrame frame;
                 if (!SerialBridge.RxQueue.TryTake(out frame, 50)) continue;
 
-                List<ChannelState> snapshot;
-                lock (_channelLock) { snapshot = new List<ChannelState>(_channels.Values); }
+                snapshot.Clear();
+                lock (_channelLock) { snapshot.AddRange(_channels.Values); }
 
                 foreach (var ch in snapshot)
                 {
@@ -856,23 +857,19 @@ namespace TaskmanagerBridge
 
         private static bool PassesFilter(ChannelState ch, uint canId)
         {
-            List<MsgFilter> snap;
-            lock (ch.Filters) { snap = new List<MsgFilter>(ch.Filters); }
-            if (snap.Count == 0) return true;
-
-            // Block filters take priority
-            foreach (var f in snap)
-                if (f.FilterType == MsgFilterType.BLOCK_FILTER && f.Matches(canId))
-                    return false;
-
-            // Pass/FC filters allow
-            foreach (var f in snap)
-                if ((f.FilterType == MsgFilterType.PASS_FILTER ||
-                     f.FilterType == MsgFilterType.FLOW_CONTROL_FILTER)
-                    && f.Matches(canId))
-                    return true;
-
-            return false;
+            lock (ch.Filters)
+            {
+                if (ch.Filters.Count == 0) return true;
+                foreach (var f in ch.Filters)
+                    if (f.FilterType == MsgFilterType.BLOCK_FILTER && f.Matches(canId))
+                        return false;
+                foreach (var f in ch.Filters)
+                    if ((f.FilterType == MsgFilterType.PASS_FILTER ||
+                         f.FilterType == MsgFilterType.FLOW_CONTROL_FILTER)
+                        && f.Matches(canId))
+                        return true;
+                return false;
+            }
         }
 
         private static void RouteIsoTpFrame(ChannelState ch, CanFrame frame)
