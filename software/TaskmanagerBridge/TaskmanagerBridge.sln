@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36915.13 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskmanagerBridge", "TaskmanagerBridge\TaskmanagerBridge.csproj", "{A92749BF-BE3A-4C62-A9A0-ECD15046958C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskmanagerOBD2Reader", "TaskmanagerOBD2Reader\TaskmanagerOBD2Reader.csproj", "{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,14 @@ Global
 		{A92749BF-BE3A-4C62-A9A0-ECD15046958C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A92749BF-BE3A-4C62-A9A0-ECD15046958C}.Release|x86.ActiveCfg = Release|x86
 		{A92749BF-BE3A-4C62-A9A0-ECD15046958C}.Release|x86.Build.0 = Release|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Debug|Any CPU.Build.0 = Debug|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Debug|x86.ActiveCfg = Debug|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Debug|x86.Build.0 = Debug|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Release|Any CPU.ActiveCfg = Release|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Release|Any CPU.Build.0 = Release|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Release|x86.ActiveCfg = Release|x86
+		{5E8A1B2C-3D4F-5A6B-7C8D-9E0F1A2B3C4D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
