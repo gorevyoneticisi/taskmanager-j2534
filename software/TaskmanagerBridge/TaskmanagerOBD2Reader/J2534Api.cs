@@ -74,8 +74,8 @@ namespace TaskmanagerOBD2Reader
     internal static class ConfigParam
     {
         public const uint LOOPBACK             = 0x03;
-        public const uint ISO15765_BS          = 0x16;
-        public const uint ISO15765_STMIN       = 0x17;
+        public const uint ISO15765_BS          = 0x1E;
+        public const uint ISO15765_STMIN       = 0x1F;
         public const uint ISO15765_FRAME_PAD_VAL = 0x20;
         public const uint DATA_RATE            = 0x01;
     }
@@ -116,9 +116,11 @@ namespace TaskmanagerOBD2Reader
         public static extern int GetLastError([MarshalAs(UnmanagedType.LPStr)] System.Text.StringBuilder errorDescription);
 
         // IOCTL IDs
-        public const uint CLEAR_RX_BUFFER  = 0x0A;
-        public const uint CLEAR_TX_BUFFER  = 0x0B;
-        public const uint SET_CONFIG       = 0x01;
+        public const uint GET_CONFIG       = 0x01;
+        public const uint SET_CONFIG       = 0x02;
+        public const uint READ_VBATT       = 0x03;
+        public const uint CLEAR_TX_BUFFER  = 0x07;
+        public const uint CLEAR_RX_BUFFER  = 0x08;
 
         public static string GetError()
         {
