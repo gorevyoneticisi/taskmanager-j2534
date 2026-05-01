@@ -399,9 +399,12 @@ namespace TaskmanagerBridge
 
                     if (ch.ProtocolId == ProtocolID.ISO15765)
                     {
-                        int    sduLen = (int)msg.DataSize - 4;
-                        byte[] sdu    = new byte[sduLen];
-                        if (sduLen > 0) Array.Copy(msg.Data, 4, sdu, 0, sduLen);
+                        int sduLen = (int)msg.DataSize - 4;
+                        // ISO 15765-2 §9.6.1: SF_DL must be 1-7. A 0-byte SDU would
+                        // produce PCI byte 0x00 (reserved) which ECUs must not receive.
+                        if (sduLen <= 0) { sent++; continue; }
+                        byte[] sdu = new byte[sduLen];
+                        Array.Copy(msg.Data, 4, sdu, 0, sduLen);
                         bool padded = (msg.TxFlags & TxFlags.ISO15765_FRAME_PAD) != 0;
 
                         int rc = SendIsoTp(ch, canId, sdu, padded, (int)Timeout);
@@ -448,14 +451,16 @@ namespace TaskmanagerBridge
             uint delivered = 0;
             uint maxMsgs   = pNumMsgs;
             int  elapsed   = 0;
-            const int POLL = 5;
+            // Use a 0ms poll when Timeout=0 so the call is truly non-blocking.
+            // A 5ms poll is used otherwise to avoid burning a full CPU core.
+            int  pollMs    = (Timeout == 0) ? 0 : 5;
 
             try
             {
                 while (delivered < maxMsgs)
                 {
                     ReassembledMsg rm;
-                    if (ch.RxQueue.TryTake(out rm, POLL))
+                    if (ch.RxQueue.TryTake(out rm, pollMs))
                     {
                         var outMsg = new PASSTHRU_MSG
                         {
@@ -481,7 +486,7 @@ namespace TaskmanagerBridge
                     }
                     else
                     {
-                        elapsed += POLL;
+                        elapsed += pollMs;
                         if (elapsed >= (int)Timeout) break;
                         if (delivered > 0) break;
                     }
@@ -515,8 +520,10 @@ namespace TaskmanagerBridge
                     {
                         ChannelState ch;
                         lock (_channelLock) { _channels.TryGetValue(ChannelID, out ch); }
+                        // Drain only this channel's queue — SerialBridge.RxQueue is shared
+                        // across ALL open channels; draining it would discard frames for
+                        // other channels (e.g., a parallel ISO15765 flash session).
                         if (ch != null) while (ch.RxQueue.TryTake(out _)) { }
-                        while (SerialBridge.RxQueue.TryTake(out _)) { }
                         Sniffa.LogTraffic("SYS_CLEAR_BUF", ioctlId, null);
                         return J2534Err.STATUS_NOERROR;
                     }
@@ -1019,7 +1026,8 @@ namespace TaskmanagerBridge
             }
             else
             {
-                // First Frame — reset FC event BEFORE sending to avoid race
+                // First Frame — reset FC event BEFORE sending to avoid race where
+                // the ECU delivers FC before we call Reset().
                 ch.IsoTx.FcReady.Reset();
                 ch.IsoTx.FcReceived = false;
 
@@ -1031,42 +1039,42 @@ namespace TaskmanagerBridge
                 Sniffa.LogTraffic("TX_ISO_FF", canId, ff);
                 SerialBridge.SendCanFrame(canId, ff, 8);
 
-                // Wait for Flow Control from ECU
-                if (!ch.IsoTx.FcReady.Wait(timeoutMs))
-                {
-                    _lastError.Value = "ISO-TP: no flow control received.";
-                    return J2534Err.ERR_NO_FLOW_CONTROL;
-                }
-                if (ch.IsoTx.FcStatus == FC_OVFL) return J2534Err.ERR_BUFFER_OVERFLOW;
+                // Wait for Flow Control (CTS). Handle FC_WAIT: the ECU may send one
+                // or more FC(WAIT) frames before FC(CTS). Loop until CTS or timeout.
+                int rc = WaitForFcCts(ch, timeoutMs);
+                if (rc != J2534Err.STATUS_NOERROR) return rc;
+
+                // Read FC parameters, then immediately arm the event for the next block
+                // BEFORE sending any CFs — eliminates the race at block boundaries.
+                int blockSize = ch.IsoTx.FcBlockSize;
+                int stMinMs   = StMinToMs(ch.IsoTx.FcStMin);
+                ch.IsoTx.FcReady.Reset();
+                ch.IsoTx.FcReceived = false;
 
                 // Send Consecutive Frames
-                int offset     = initBytes;
-                byte sn        = 1;
+                int  offset     = initBytes;
+                byte sn         = 1;
                 int  blockCount = 0;
-                int  blockSize  = ch.IsoTx.FcBlockSize;
-                int  stMinMs    = StMinToMs(ch.IsoTx.FcStMin);
 
                 while (offset < sdu.Length)
                 {
                     if (blockSize != 0 && blockCount >= blockSize)
                     {
-                        // Block exhausted — wait for next FC
-                        ch.IsoTx.FcReady.Reset();
-                        ch.IsoTx.FcReceived = false;
-                        if (!ch.IsoTx.FcReady.Wait(timeoutMs))
-                        {
-                            _lastError.Value = "ISO-TP: no flow control at block boundary.";
-                            return J2534Err.ERR_NO_FLOW_CONTROL;
-                        }
-                        if (ch.IsoTx.FcStatus == FC_OVFL) return J2534Err.ERR_BUFFER_OVERFLOW;
+                        // Block exhausted — wait for next FC(CTS). Event was already
+                        // reset after the previous FC was processed (see above).
+                        rc = WaitForFcCts(ch, timeoutMs);
+                        if (rc != J2534Err.STATUS_NOERROR) return rc;
                         blockSize  = ch.IsoTx.FcBlockSize;
                         stMinMs    = StMinToMs(ch.IsoTx.FcStMin);
+                        // Arm for the block after this one
+                        ch.IsoTx.FcReady.Reset();
+                        ch.IsoTx.FcReceived = false;
                         blockCount = 0;
                     }
 
-                    byte[] cf      = PaddedFrame(padded);
-                    cf[0]          = (byte)(ISO_CF | (sn & 0x0F));
-                    int cfPayload  = Math.Min(7, sdu.Length - offset);
+                    byte[] cf     = PaddedFrame(padded);
+                    cf[0]         = (byte)(ISO_CF | (sn & 0x0F));
+                    int cfPayload = Math.Min(7, sdu.Length - offset);
                     Array.Copy(sdu, offset, cf, 1, cfPayload);
                     Sniffa.LogTraffic("TX_ISO_CF", canId, cf);
                     SerialBridge.SendCanFrame(canId, cf, padded ? 8 : 1 + cfPayload);
@@ -1079,6 +1087,35 @@ namespace TaskmanagerBridge
                 }
             }
             return J2534Err.STATUS_NOERROR;
+        }
+
+        // Waits for FC(CTS), transparently looping through FC(WAIT) frames.
+        // Returns STATUS_NOERROR on CTS, ERR_NO_FLOW_CONTROL on timeout,
+        // ERR_BUFFER_OVERFLOW on FC(OVFL).
+        private static int WaitForFcCts(ChannelState ch, int timeoutMs)
+        {
+            int remaining = timeoutMs;
+            while (remaining > 0)
+            {
+                int start = Environment.TickCount;
+                if (!ch.IsoTx.FcReady.Wait(remaining))
+                {
+                    _lastError.Value = "ISO-TP: flow control timeout.";
+                    return J2534Err.ERR_NO_FLOW_CONTROL;
+                }
+                remaining -= (Environment.TickCount - start);
+
+                byte status = ch.IsoTx.FcStatus;
+                if (status == FC_CTS)  return J2534Err.STATUS_NOERROR;
+                if (status == FC_OVFL) return J2534Err.ERR_BUFFER_OVERFLOW;
+
+                // FC_WAIT — reset and wait again; per ISO 15765-2 the ECU will
+                // send another FC before the N_Bs timeout expires.
+                ch.IsoTx.FcReady.Reset();
+                ch.IsoTx.FcReceived = false;
+            }
+            _lastError.Value = "ISO-TP: flow control timeout (FC_WAIT loop).";
+            return J2534Err.ERR_NO_FLOW_CONTROL;
         }
 
         private static byte[] PaddedFrame(bool padded)

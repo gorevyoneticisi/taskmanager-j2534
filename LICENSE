@@ -1,0 +1,84 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 Taskmanager Project. All Rights Reserved.
+
+NOTICE: This software and all associated source code, documentation,
+hardware designs, firmware, and related materials (collectively, the
+"Software") are the exclusive intellectual property of the copyright
+holder. All rights are reserved.
+
+1. RESTRICTIONS
+
+   You may NOT, without prior explicit written permission from the
+   copyright holder:
+
+   a) Copy, reproduce, or duplicate the Software or any portion thereof
+      in any form or by any means, whether electronic, mechanical, or
+      otherwise.
+
+   b) Distribute, sublicense, sell, rent, lease, lend, transfer, or
+      otherwise make the Software available to any third party.
+
+   c) Modify, adapt, translate, decompile, disassemble, reverse engineer,
+      or create derivative works based on the Software.
+
+   d) Remove, alter, or obscure any copyright, trademark, proprietary
+      notice, or attribution in the Software.
+
+   e) Use the Software, in whole or in part, for commercial purposes,
+      in a product, service, or offering of any kind.
+
+   f) Publish, post, or otherwise disclose the Software or any portion
+      thereof in any public forum, repository, or platform beyond what
+      is already published by the copyright holder.
+
+   g) Use the name, brand, or identity of this project or its author to
+      endorse or promote products or services derived from this Software.
+
+2. PERMITTED USES
+
+   Subject to the restrictions above, you may:
+
+   a) View and study the published source code for personal,
+      non-commercial, educational purposes only.
+
+   b) Build and run the Software solely on hardware you personally own
+      for private, non-commercial use.
+
+   c) Submit bug reports and suggestions to the copyright holder through
+      designated channels (e.g., the project's issue tracker).
+
+3. NO WARRANTIES
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+   NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE
+   FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+4. VEHICLE SAFETY DISCLAIMER
+
+   This Software interfaces with vehicle electronic control units (ECUs).
+   Incorrect use may result in vehicle malfunction, data corruption, or
+   personal injury. You use this Software entirely at your own risk. The
+   copyright holder accepts no liability for any damage to vehicles,
+   equipment, or data resulting from use of this Software.
+
+5. TERMINATION
+
+   Any rights granted under Section 2 terminate immediately and
+   automatically if you violate any term of this License. Upon
+   termination you must destroy all copies of the Software in your
+   possession.
+
+6. GOVERNING LAW
+
+   This License is governed by the laws of the Republic of Turkey,
+   without regard to conflict-of-law principles. Any dispute arising
+   under this License shall be subject to the exclusive jurisdiction of
+   the courts of Istanbul, Turkey.
+
+For licensing inquiries, contact the copyright holder via the project's
+GitHub repository issue tracker.
