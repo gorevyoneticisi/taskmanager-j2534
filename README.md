@@ -2,7 +2,7 @@
 
 [![Build J2534 DLL](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml/badge.svg)](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml)
 
-A **SAE J2534-1 v04.04** compliant PassThru DLL written in C# (.NET Framework 4.7.2, x86) that bridges a custom STM32F407-based CAN adapter to Windows OBD2 diagnostic software — with no proprietary drivers required.
+A **SAE J2534-1 v04.04** compliant PassThru DLL written entirely in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to any Windows OBD2 diagnostic application — no proprietary drivers, no locked hardware.
 
 **Confirmed working with:**
 - Toyota Techstream
@@ -13,17 +13,24 @@ A **SAE J2534-1 v04.04** compliant PassThru DLL written in C# (.NET Framework 4.
 
 ---
 
-## What This DLL Does
+## Why This Exists
 
-The DLL implements the full J2534-1 v04.04 spec at the software layer — the STM32 firmware only needs to move raw CAN frames over UART.
+Every commercial J2534 interface ships with a proprietary DLL that locks you to their hardware. This project breaks that dependency: the DLL implements the **complete J2534-1 v04.04 specification in software**, while the STM32 firmware is kept intentionally thin — it only moves raw CAN frames over UART. Swap the hardware, keep the software.
+
+This means any PC-side diagnostic tool that speaks J2534 works out of the box, with full ISO15765-2 transport, multi-channel support, and all 14 mandatory API exports.
+
+---
+
+## Feature Matrix
 
 | Feature | Status |
 |---------|--------|
 | All 14 J2534 mandatory exports | ✅ |
-| Correct J2534 v04.04 constant values (IoctlID, ConfigParam, error codes) | ✅ |
+| Correct J2534 v04.04 constants (IoctlID, ConfigParam, error codes) | ✅ |
 | Multi-channel support (CAN + ISO15765 simultaneously) | ✅ |
 | ISO15765-2 transport layer — segmentation and reassembly in DLL | ✅ |
 | Flow Control (FC) auto-sent on First Frame reception | ✅ |
+| FC_WAIT handling in transmit path | ✅ |
 | PASS_FILTER / BLOCK_FILTER / FLOW_CONTROL_FILTER per channel | ✅ |
 | Periodic messages with real `System.Threading.Timer` | ✅ |
 | SET_CONFIG persists ISO15765_BS / STMIN per channel | ✅ |
@@ -32,6 +39,44 @@ The DLL implements the full J2534-1 v04.04 spec at the software layer — the ST
 | Async non-blocking traffic log to `%LOCALAPPDATA%` | ✅ |
 | 29-bit extended CAN IDs | pending firmware v2 |
 | Dynamic baud rate switching | pending firmware v2 |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 Diagnostic Application               │
+│         (Techstream / ODIS / IDS / VCDS / ...)      │
+└──────────────────────┬──────────────────────────────┘
+                       │  J2534-1 v04.04 API (Win32)
+┌──────────────────────▼──────────────────────────────┐
+│               TaskmanagerBridge.dll                  │
+│                                                      │
+│  PassThruAPI.cs ── 14 exported functions             │
+│  ├── ChannelManager ── per-channel queues,           │
+│  │                     filters, ISO-TP sessions      │
+│  ├── FrameRouter ───── background thread,            │
+│  │                     PASS/BLOCK filter dispatch    │
+│  └── IsoTpEngine ───── SF/FF/CF/FC segmentation,     │
+│                        FC_WAIT loop, reassembly      │
+│                                                      │
+│  SerialBridge.cs ── UART owner, TX builder,          │
+│                     RX state machine (BlockingColl.) │
+│  Sniffa.cs ──────── async traffic log, bounded queue │
+│  BridgeConfig.cs ── registry persistence             │
+│  ConfigDialog.cs ── WinForms COM port / speed picker │
+└──────────────────────┬──────────────────────────────┘
+                       │  921 600 baud 8N1 UART
+┌──────────────────────▼──────────────────────────────┐
+│           STM32F407VET6 firmware                     │
+│           (raw CAN ↔ UART bridge only)               │
+└──────────────────────┬──────────────────────────────┘
+                       │  CAN bus (ISO 11898-2)
+                  Vehicle ECUs
+```
+
+The STM32 firmware is deliberately kept simple. Every protocol decision — ISO-TP framing, flow control, filter matching, channel isolation — lives in the DLL. This makes the firmware stable and the software independently testable.
 
 ---
 
@@ -64,20 +109,20 @@ taskmanager-j2534/
 
 ```
 PC (USB)
-  |
-  v 921600 baud 8N1
+  │
+  ▼ 921 600 baud 8N1
 FT232H USB-UART adapter
-  |
-  v UART TTL 3.3 V
-STM32F407VET6  <-- custom UART-CAN bridge firmware
-  |
-  v
-ADuM1201  <-- galvanic isolation (protects the PC from vehicle ground loops)
-  |
-  v
-SN65HVD230  <-- 3.3 V CAN transceiver
-  |
-  v OBD2 pins 6 & 14
+  │
+  ▼ UART TTL 3.3 V
+STM32F407VET6  ◄── custom UART-CAN bridge firmware
+  │
+  ▼
+ADuM1201  ◄── galvanic isolation (protects the PC from vehicle ground loops)
+  │
+  ▼
+SN65HVD230  ◄── 3.3 V CAN transceiver (ISO 11898-2)
+  │
+  ▼ OBD2 pins 6 & 14
 CAN bus (vehicle)
 ```
 
@@ -143,8 +188,10 @@ The DLL handles the full ISO-TP protocol transparently — your application send
 
 | SDU length | Frame type |
 |-----------|-----------|
-| ≤ 7 bytes | Single Frame (SF): `[PCI+len][data...]` |
+| 1–7 bytes | Single Frame (SF): `[PCI+len][data...]` |
 | > 7 bytes | First Frame → wait FC → Consecutive Frames |
+
+FC_WAIT frames from the ECU are handled in a loop: the transmitter holds until `FC_CTS` is received or the N_Bs timeout expires.
 
 **Receive (via FrameRouter background thread):**
 
@@ -185,8 +232,7 @@ Output: `TaskmanagerBridge\bin\x86\Release\TaskmanagerBridge.dll`
 
 ### CI
 
-Every push to `main` that touches `software/**` triggers the [Build J2534 DLL](.github/workflows/build.yml) workflow.
-It builds, validates the output is x86 PE32, and uploads the DLL as a downloadable artifact under the Actions tab.
+Every push to `main` that touches `software/**` triggers the [Build J2534 DLL](.github/workflows/build.yml) workflow. It builds, validates the output is x86 PE32, and uploads the DLL as a downloadable artifact under the Actions tab.
 
 ---
 
@@ -201,8 +247,7 @@ Copy-Item "software\TaskmanagerBridge\TaskmanagerBridge\bin\x86\Release\Taskmana
 
 ### Step 2 — Register in Windows (run as Administrator)
 
-J2534 tools discover PassThru DLLs through a well-known registry key.
-On 64-bit Windows the key lives under `WOW6432Node` because both the DLL and the diagnostic tools are 32-bit.
+J2534 tools discover PassThru DLLs through a well-known registry key. On 64-bit Windows the key lives under `WOW6432Node` because both the DLL and the diagnostic tools are 32-bit.
 
 ```powershell
 $dll  = "C:\J2534\TaskmanagerBridge.dll"
@@ -220,9 +265,7 @@ Write-Host "Registered."
 
 ### Step 3 — First launch
 
-Open your diagnostic app. The DLL shows a COM port picker on the first run.
-Select the **FT232H** port (usually the highest COM number), choose CAN speed (500 kbps for most vehicles), and click **Connect**.
-Check **"Remember these settings"** to skip the dialog on future launches.
+Open your diagnostic app. The DLL shows a COM port picker on the first run. Select the **FT232H** port (usually the highest COM number), choose CAN speed (500 kbps for most vehicles), and click **Connect**. Check **"Remember these settings"** to skip the dialog on future launches.
 
 ### Uninstalling
 
@@ -251,8 +294,7 @@ Example entries:
 [14:22:01.856] RX               | ID: 0x000007E8 | DATA: 21 4A 43 35 34 34 34 34
 ```
 
-The log queue is bounded at 10 000 entries. Entries are dropped (not queued) when full
-so the J2534 caller thread is never delayed by disk I/O.
+The log queue is bounded at 10 000 entries. Entries are dropped (not queued) when full so the J2534 caller thread is never delayed by disk I/O.
 
 ---
 
@@ -270,13 +312,12 @@ so the J2534 caller thread is never delayed by disk I/O.
 | `PassThruStopMsgFilter` | Removes filter by ID; returns `ERR_INVALID_FILTER_ID` if not found |
 | `PassThruStartPeriodicMsg` | Real timer per message ID; up to 10 per channel; interval 5–65535 ms |
 | `PassThruStopPeriodicMsg` | Disposes timer by message ID |
-| `PassThruIoctl` | `READ_VBATT`/`EXT` → 14200 mV; `GET_CONFIG`/`SET_CONFIG`; `CLEAR_*`; `FIVE_BAUD`/`FAST_INIT` → `ERR_NOT_SUPPORTED` |
+| `PassThruIoctl` | `READ_VBATT`/`EXT` → 14 200 mV; `GET_CONFIG`/`SET_CONFIG`; `CLEAR_*`; `FIVE_BAUD`/`FAST_INIT` → `ERR_NOT_SUPPORTED` |
 | `PassThruReadVersion` | Firmware `STM32F407_v2.0.0`, DLL `TaskmanagerBridge_v2.0.0`, API `04.04` |
 | `PassThruGetLastError` | Per-thread error string (ThreadLocal) |
 | `PassThruSetProgrammingVoltage` | Logged only — hardware does not support pin voltage |
 
-Battery voltage (`READ_VBATT` / `READ_VBATT_EXT`) returns **14 200 mV**.
-Techstream and ODIS will refuse to connect if this returns 0 or below ~8 000 mV.
+Battery voltage (`READ_VBATT` / `READ_VBATT_EXT`) returns **14 200 mV**. Techstream and ODIS refuse to connect if this returns 0 or below ~8 000 mV.
 
 ---
 
@@ -285,7 +326,7 @@ Techstream and ODIS will refuse to connect if this returns 0 or below ~8 000 mV.
 ### Toyota Techstream
 - Requires `PassThruSupport.04.04` registry key ✅
 - Calls `READ_VBATT_EXT (0x10001)` → returns 14 200 mV ✅
-- Expects `ERR_BUFFER_EMPTY (0x10)` when no frames queued — not `STATUS_NOERROR` with 0 messages ✅
+- Expects `ERR_BUFFER_EMPTY (0x10)` when no frames queued ✅
 - Uses ISO15765 for all UDS service communication ✅
 
 ### VW ODIS 25
