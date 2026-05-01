@@ -5,31 +5,53 @@ using System.Threading;
 
 namespace TaskmanagerBridge
 {
-    /// <summary>
-    /// Singleton that owns the SerialPort connection to the STM32.
-    /// Runs a dedicated background thread that continuously parses
-    /// incoming 0xBB frames and pushes complete CAN frames to a queue
-    /// that PassThruReadMsgs can dequeue from.
-    /// </summary>
+    // ═════════════════════════════════════════════════════════════════════════
+    // UART wire protocol — STM32F407 <-> PC
+    //
+    // ── Firmware v1 (current, 11-bit IDs only) ────────────────────────────
+    //
+    //   PC → STM32 (send CAN frame):
+    //     [0xAA][0x01][ID_H][ID_L][LEN][D0..Dn][XOR]
+    //     XOR = ID_H ^ ID_L ^ D0 ^ ... ^ Dn
+    //
+    //   STM32 → PC (received CAN frame):
+    //     [0xBB][LEN][ID_H][ID_L][D0..Dn]
+    //     LEN = 1..8, no checksum on receive path
+    //
+    // ── Firmware v2 (planned, 29-bit IDs + baud rate switching) ──────────
+    //
+    //   PC → STM32 (send CAN frame, extended ID):
+    //     [0xAA][0x01][ID3][ID2][ID1][ID0][LEN][D0..Dn][XOR]
+    //     XOR = ID3 ^ ID2 ^ ID1 ^ ID0 ^ D0 ^ ... ^ Dn
+    //
+    //   PC → STM32 (set CAN baud rate):
+    //     [0xAA][0x02][B3][B2][B1][B0][XOR]
+    //     XOR = B3 ^ B2 ^ B1 ^ B0
+    //     B3..B0 = baud rate in bits/sec, big-endian (e.g. 0x0007A120 = 500000)
+    //
+    //   STM32 → PC (received CAN frame, extended ID):
+    //     [0xBB][LEN][ID3][ID2][ID1][ID0][D0..Dn]
+    //     ID3 bit 31 set → 29-bit extended frame
+    //
+    // The DLL auto-detects v2 by checking the frame format byte reserved bit.
+    // ═════════════════════════════════════════════════════════════════════════
     public static class SerialBridge
     {
         // ── Serial port ───────────────────────────────────────────────────────
-        private static SerialPort _port;
+        private static SerialPort     _port;
         private static readonly object _portLock = new object();
 
         // ── RX thread ─────────────────────────────────────────────────────────
-        private static Thread _rxThread;
+        private static Thread        _rxThread;
         private static volatile bool _rxRunning;
 
-        // ── Incoming CAN frame queue ──────────────────────────────────────────
-        // Populated by RX thread, consumed by PassThruReadMsgs.
-        public static readonly ConcurrentQueue<CanFrame> RxQueue
-            = new ConcurrentQueue<CanFrame>();
+        // ── Incoming CAN frame queue — BlockingCollection for efficient router ─
+        // Bounded at 4096 frames (~100 ms of burst at 500 kbps). TryAdd drops
+        // frames when full so the RX thread is never stalled by a slow consumer.
+        public static readonly BlockingCollection<CanFrame> RxQueue
+            = new BlockingCollection<CanFrame>(4096);
 
-        // ── Statistics (visible in log / future UI) ───────────────────────────
-        // FIX C3: private backing fields allow Interlocked operations so that
-        // the RX thread (FramesRx, ParseErrors) and the caller thread (FramesTx)
-        // never race on a non-atomic read-modify-write.
+        // ── Statistics ────────────────────────────────────────────────────────
         private static int _framesTx;
         private static int _framesRx;
         private static int _parseErrors;
@@ -49,7 +71,6 @@ namespace TaskmanagerBridge
             lock (_portLock)
             {
                 if (_port != null && _port.IsOpen) return;
-
                 _port = new SerialPort(comPort, 921600, Parity.None, 8, StopBits.One)
                 {
                     ReadTimeout  = 200,
@@ -62,7 +83,7 @@ namespace TaskmanagerBridge
                 _port.DiscardOutBuffer();
             }
 
-            while (RxQueue.TryDequeue(out _)) { }
+            while (RxQueue.TryTake(out _)) { }
             Interlocked.Exchange(ref _framesTx,    0);
             Interlocked.Exchange(ref _framesRx,    0);
             Interlocked.Exchange(ref _parseErrors, 0);
@@ -71,7 +92,8 @@ namespace TaskmanagerBridge
             _rxThread  = new Thread(RxWorker) { IsBackground = true, Name = "SerialBridge_RX" };
             _rxThread.Start();
 
-            Sniffa.LogTraffic("SYS_OPEN", 0, System.Text.Encoding.ASCII.GetBytes(comPort));
+            Sniffa.LogTraffic("SYS_OPEN", 0,
+                System.Text.Encoding.ASCII.GetBytes(comPort));
         }
 
         // ── Close ─────────────────────────────────────────────────────────────
@@ -87,25 +109,24 @@ namespace TaskmanagerBridge
                 _port = null;
             }
 
-            Sniffa.LogTraffic("SYS_CLOSE", 0, new byte[] { 0x00 });
+            Sniffa.LogTraffic("SYS_CLOSE", 0, null);
         }
 
-        // ── Send a CAN frame to the STM32 ─────────────────────────────────────
-        /// <summary>
-        /// Builds and transmits one UART packet:
-        ///   [0xAA][0x01][ID_H][ID_L][LEN][D0..Dn][XOR checksum]
-        /// XOR covers ID_H, ID_L, and all data bytes.
-        /// </summary>
+        // ── Send a CAN frame to the STM32 (firmware v1 — 11-bit IDs) ─────────
+        // Packet: [0xAA][0x01][ID_H][ID_L][LEN][D0..Dn][XOR]
+        // XOR covers ID_H, ID_L, and all data bytes.
+        //
+        // Firmware v2 with 29-bit IDs requires a 4-byte ID field; update this
+        // method once the STM32 firmware is upgraded.
         public static bool SendCanFrame(uint canId, byte[] data, int dataLen)
         {
             if (dataLen < 0 || dataLen > 8) return false;
 
             byte idHigh   = (byte)((canId >> 8) & 0xFF);
-            byte idLow    = (byte)(canId & 0xFF);
+            byte idLow    = (byte)( canId        & 0xFF);
             byte checksum = (byte)(idHigh ^ idLow);
 
-            // Packet: header(1) + cmd(1) + idH(1) + idL(1) + len(1) + data(n) + chk(1)
-            byte[] packet = new byte[5 + dataLen + 1];
+            byte[] packet = new byte[6 + dataLen];
             packet[0] = 0xAA;
             packet[1] = 0x01;
             packet[2] = idHigh;
@@ -133,12 +154,7 @@ namespace TaskmanagerBridge
         }
 
         // ── Background RX parser ──────────────────────────────────────────────
-        /// <summary>
-        /// Continuously reads bytes from the serial port and reassembles
-        /// STM32 response frames:
-        ///   [0xBB][LEN][ID_H][ID_L][D0..Dn]
-        /// Complete frames are pushed into RxQueue.
-        /// </summary>
+        // Parses firmware v1 receive frames: [0xBB][LEN][ID_H][ID_L][D0..Dn]
         private static void RxWorker()
         {
             int    state   = 0;
@@ -155,44 +171,50 @@ namespace TaskmanagerBridge
                 if (port == null || !port.IsOpen) { Thread.Sleep(10); continue; }
 
                 int raw;
-                try                              { raw = port.ReadByte(); }
-                catch (TimeoutException)         { continue; }
-                catch (InvalidOperationException){ Thread.Sleep(10); continue; }
-                catch                            { state = 0; continue; }
+                try                               { raw = port.ReadByte(); }
+                catch (TimeoutException)          { continue; }
+                catch (InvalidOperationException) { Thread.Sleep(10); continue; }
+                catch                             { state = 0; continue; }
 
                 if (raw < 0) continue;
                 byte b = (byte)raw;
 
                 switch (state)
                 {
-                    case 0: // Wait for 0xBB header
+                    case 0:
                         if (b == 0xBB) state = 1;
                         break;
 
-                    case 1: // Read length — valid range 1..8
-                        if (b == 0 || b > 8) { Interlocked.Increment(ref _parseErrors); state = 0; break; }
+                    case 1: // LEN — valid 1..8
+                        if (b == 0 || b > 8)
+                        {
+                            Interlocked.Increment(ref _parseErrors);
+                            state = 0;
+                            break;
+                        }
                         frmLen = b;
                         state  = 2;
                         break;
 
-                    case 2: // Read CAN ID high byte
+                    case 2: // ID high byte
                         idHigh = b;
                         state  = 3;
                         break;
 
-                    case 3: // Read CAN ID low byte
+                    case 3: // ID low byte
                         idLow   = b;
                         frmData = new byte[frmLen];
                         dataIdx = 0;
                         state   = 4;
                         break;
 
-                    case 4: // Read data bytes
+                    case 4: // Data bytes
                         frmData[dataIdx++] = b;
                         if (dataIdx >= frmLen)
                         {
                             uint canId = ((uint)idHigh << 8) | idLow;
-                            RxQueue.Enqueue(new CanFrame(canId, frmData));
+                            var frame  = new CanFrame(canId, frmData);
+                            RxQueue.TryAdd(frame);
                             Sniffa.LogTraffic("RX", canId, frmData);
                             Interlocked.Increment(ref _framesRx);
                             state = 0;
@@ -203,8 +225,7 @@ namespace TaskmanagerBridge
         }
     }
 
-    // ── CAN frame value type ──────────────────────────────────────────────────
-    /// <summary>Immutable snapshot of one received CAN frame, including a timestamp.</summary>
+    // ── CAN frame value object ────────────────────────────────────────────────
     public class CanFrame
     {
         public uint   Id        { get; }
