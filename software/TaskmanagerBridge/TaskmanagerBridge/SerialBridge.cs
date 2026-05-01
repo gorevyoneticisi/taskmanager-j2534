@@ -6,7 +6,7 @@ using System.Threading;
 namespace TaskmanagerBridge
 {
     // ═════════════════════════════════════════════════════════════════════════
-    // UART wire protocol — STM32F407 <-> PC
+    // UART wire protocol, STM32F407 <-> PC
     //
     // ── Firmware v1 (current, 11-bit IDs only) ────────────────────────────
     //
@@ -16,7 +16,11 @@ namespace TaskmanagerBridge
     //
     //   STM32 → PC (received CAN frame):
     //     [0xBB][LEN][ID_H][ID_L][D0..Dn]
-    //     LEN = 1..8, no checksum on receive path
+    //     LEN = 1..8
+    //     NOTE: no checksum on the v1 receive path. The STM32 guarantees CAN
+    //     framing but not the UART link. A byte dropped due to FTDI buffer
+    //     overrun or EMI will silently produce a corrupt frame. This is fixed
+    //     in firmware v2 by adding an XOR byte at the end of every RX packet.
     //
     // ── Firmware v2 (planned, 29-bit IDs + baud rate switching) ──────────
     //
@@ -29,11 +33,12 @@ namespace TaskmanagerBridge
     //     XOR = B3 ^ B2 ^ B1 ^ B0
     //     B3..B0 = baud rate in bits/sec, big-endian (e.g. 0x0007A120 = 500000)
     //
-    //   STM32 → PC (received CAN frame, extended ID):
-    //     [0xBB][LEN][ID3][ID2][ID1][ID0][D0..Dn]
-    //     ID3 bit 31 set → 29-bit extended frame
+    //   STM32 → PC (received CAN frame, extended ID, WITH checksum):
+    //     [0xBB][LEN][ID3][ID2][ID1][ID0][D0..Dn][XOR]
+    //     XOR = ID3 ^ ID2 ^ ID1 ^ ID0 ^ D0 ^ ... ^ Dn
+    //     If bit 7 of ID3 is set the frame carries a 29-bit extended CAN ID.
+    //     The DLL verifies XOR and drops frames that fail the check.
     //
-    // The DLL auto-detects v2 by checking the frame format byte reserved bit.
     // ═════════════════════════════════════════════════════════════════════════
     public static class SerialBridge
     {
@@ -45,7 +50,7 @@ namespace TaskmanagerBridge
         private static Thread        _rxThread;
         private static volatile bool _rxRunning;
 
-        // ── Incoming CAN frame queue — BlockingCollection for efficient router ─
+        // ── Incoming CAN frame queue, BlockingCollection for efficient router ─
         // Bounded at 4096 frames (~100 ms of burst at 500 kbps). TryAdd drops
         // frames when full so the RX thread is never stalled by a slow consumer.
         public static readonly BlockingCollection<CanFrame> RxQueue
@@ -112,7 +117,7 @@ namespace TaskmanagerBridge
             Sniffa.LogTraffic("SYS_CLOSE", 0, null);
         }
 
-        // ── Send a CAN frame to the STM32 (firmware v1 — 11-bit IDs) ─────────
+        // ── Send a CAN frame to the STM32 (firmware v1, 11-bit IDs) ──────────
         // Packet: [0xAA][0x01][ID_H][ID_L][LEN][D0..Dn][XOR]
         // XOR covers ID_H, ID_L, and all data bytes.
         //
@@ -185,7 +190,7 @@ namespace TaskmanagerBridge
                         if (b == 0xBB) state = 1;
                         break;
 
-                    case 1: // LEN — valid 1..8
+                    case 1: // LEN, valid 1..8
                         if (b == 0 || b > 8)
                         {
                             Interlocked.Increment(ref _parseErrors);
