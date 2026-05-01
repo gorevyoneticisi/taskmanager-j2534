@@ -108,8 +108,8 @@ namespace TaskmanagerOBD2Reader
         private bool ReadPidResponse(byte pid, out byte a, out byte b)
         {
             a = 0; b = 0;
-            long deadline = Environment.TickCount + 500;
-            while (Environment.TickCount < deadline)
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < 500)
             {
                 byte[] resp = ReadMsg(200);
                 if (resp == null) continue;
@@ -172,8 +172,8 @@ namespace TaskmanagerOBD2Reader
 
             // VIN can be multi-frame; collect up to 3 responses
             var vinBytes = new System.Collections.Generic.List<byte>();
-            long deadline = Environment.TickCount + 1500;
-            while (Environment.TickCount < deadline)
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < 1500)
             {
                 byte[] resp = ReadMsg(300);
                 if (resp == null) break;
