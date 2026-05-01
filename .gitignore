@@ -33,6 +33,7 @@ firmware/**/Debug/
 firmware/**/Release/
 firmware/**/.settings/
 
+
 # ── OS noise ─────────────────────────────────────────────────────────────────
 Thumbs.db
 .DS_Store
