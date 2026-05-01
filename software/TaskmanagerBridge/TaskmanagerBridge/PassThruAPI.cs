@@ -44,7 +44,7 @@ namespace TaskmanagerBridge
         public const uint ISO15765 = 6;
     }
 
-    // ── IoctlID — J2534-1 v04.04 correct values ──────────────────────────────
+    // ── IoctlID: J2534-1 v04.04 correct values ───────────────────────────────
     internal static class IoctlID
     {
         public const uint GET_CONFIG                          = 0x01;
@@ -61,24 +61,28 @@ namespace TaskmanagerBridge
         public const uint ADD_TO_FUNCT_MSG_LOOKUP_TABLE       = 0x0C;
         public const uint DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE  = 0x0D;
         public const uint READ_PROG_VOLTAGE                   = 0x0E;
-        public const uint READ_VBATT_EXT                      = 0x10001; // DrewTech ext — Techstream/ODIS
+        public const uint READ_VBATT_EXT                      = 0x10001; // DrewTech ext, used by Techstream and ODIS
     }
 
-    // ── ConfigParam — J2534-1 v04.04 correct values ───────────────────────────
+    // ── ConfigParam: J2534-1 v04.04 correct values ───────────────────────────
     internal static class ConfigParam
     {
-        public const uint DATA_RATE        = 0x01;
-        public const uint LOOPBACK         = 0x03;
-        public const uint BIT_SAMPLE_POINT = 0x17;  // was wrong: 0x04
-        public const uint SYNC_MODE        = 0x05;
-        public const uint J1962_PINS       = 0x19;  // was wrong: 0x09
-        public const uint ISO15765_BS      = 0x1E;  // was wrong: 0x14
-        public const uint ISO15765_STMIN   = 0x1F;  // was wrong: 0x15
-        public const uint BS_TX            = 0x22;  // was wrong: 0x16
-        public const uint STMIN_TX         = 0x23;  // was wrong: 0x17
+        public const uint DATA_RATE              = 0x01;
+        public const uint LOOPBACK               = 0x03;
+        public const uint BIT_SAMPLE_POINT       = 0x17;  // was wrong: 0x04
+        public const uint SYNCH_JUMPWIDTH        = 0x18;
+        public const uint SYNC_MODE              = 0x05;
+        public const uint J1962_PINS             = 0x19;  // was wrong: 0x09
+        public const uint ISO15765_BS            = 0x1E;  // was wrong: 0x14
+        public const uint ISO15765_STMIN         = 0x1F;  // was wrong: 0x15
+        public const uint ISO15765_FRAME_PAD_VAL = 0x20;  // padding byte for padded frames
+        public const uint ISO15765_ADDR_TYPE     = 0x21;  // 0=normal, 1=extended, 2=mixed
+        public const uint BS_TX                  = 0x22;  // was wrong: 0x16
+        public const uint STMIN_TX               = 0x23;  // was wrong: 0x17
+        public const uint ISO15765_WFT_MAX       = 0x24;  // max FC_WAIT frames before abort
     }
 
-    // ── J2534 error codes — v04.04 correct values ─────────────────────────────
+    // ── J2534 error codes: v04.04 correct values ─────────────────────────────
     internal static class J2534Err
     {
         public const int STATUS_NOERROR          = 0x00;
@@ -143,7 +147,7 @@ namespace TaskmanagerBridge
         public uint   FilterType;
         public uint   MaskId;
         public uint   PatternId;
-        // FLOW_CONTROL_FILTER only — the FC frame to send when this filter triggers
+        // FLOW_CONTROL_FILTER only: the FC frame to send when this filter triggers
         public uint   FcCanId;
         public byte[] FcPayload;   // bytes after the 4-byte CAN ID header
         public uint   FcDataSize;
@@ -194,14 +198,14 @@ namespace TaskmanagerBridge
         public uint Flags;
         public uint BaudRate;
 
-        // Per-channel receive queue — filled by FrameRouter, drained by ReadMsgs
+        // Per-channel receive queue, filled by FrameRouter and drained by ReadMsgs
         public readonly BlockingCollection<ReassembledMsg> RxQueue
             = new BlockingCollection<ReassembledMsg>(4096);
 
-        // Filters — always accessed under lock(Filters)
+        // Filters, always accessed under lock(Filters)
         public readonly List<MsgFilter> Filters = new List<MsgFilter>();
 
-        // Periodic messages — always accessed under lock(Periodic)
+        // Periodic messages, always accessed under lock(Periodic)
         public readonly Dictionary<uint, PeriodicEntry> Periodic
             = new Dictionary<uint, PeriodicEntry>();
 
@@ -209,17 +213,19 @@ namespace TaskmanagerBridge
         public readonly IsoTpRxSession IsoRx = new IsoTpRxSession();
         public readonly IsoTpTxSession IsoTx = new IsoTpTxSession();
 
-        // ISO-TP tuning — written by SET_CONFIG, read by router/transmitter
-        public volatile uint Iso15765_BS    = 0;   // 0 = no limit
-        public volatile uint Iso15765_STMin = 0;   // ms between sent FC
-        public volatile uint Iso15765_BS_Tx    = 0;
-        public volatile uint Iso15765_STMin_Tx = 25; // ms between sent CF
+        // ISO-TP tuning written by SET_CONFIG, read by router and transmitter
+        public volatile uint Iso15765_BS          = 0;    // 0 = no block-size limit
+        public volatile uint Iso15765_STMin        = 0;    // ms between sent FC
+        public volatile uint Iso15765_BS_Tx        = 0;
+        public volatile uint Iso15765_STMin_Tx     = 25;  // ms between sent CF
+        public volatile uint Iso15765_FramePadVal  = 0xCC; // padding byte (0xCC = DrewTech default)
+        public volatile uint Iso15765_WftMax       = 0;   // 0 = unlimited FC_WAIT frames accepted
 
         public bool Use29BitId => (Flags & ConnectFlags.CAN_29BIT_ID) != 0;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // J2534-1 v04.04 PassThru DLL — 14 mandatory exports
+    // J2534-1 v04.04 PassThru DLL: 14 mandatory exports
     // ISO15765-2 transport, multi-channel, filters, periodic messages
     // ═════════════════════════════════════════════════════════════════════════
     public class PassThruAPI
@@ -247,7 +253,7 @@ namespace TaskmanagerBridge
         private const byte FC_CTS  = 0x00;
         private const byte FC_WAIT = 0x01;
         private const byte FC_OVFL = 0x02;
-        private const byte ISO_PAD = 0xCC;   // DrewTech-compatible padding byte
+        private const byte ISO_PAD = 0xCC;   // default padding byte (DrewTech compatible)
 
         // ─────────────────────────────────────────────────────────────────────
         // 1. PassThruOpen
@@ -400,7 +406,7 @@ namespace TaskmanagerBridge
                     if (ch.ProtocolId == ProtocolID.ISO15765)
                     {
                         int sduLen = (int)msg.DataSize - 4;
-                        // ISO 15765-2 §9.6.1: SF_DL must be 1-7. A 0-byte SDU would
+                        // ISO 15765-2 s9.6.1: SF_DL must be 1-7. A 0-byte SDU would
                         // produce PCI byte 0x00 (reserved) which ECUs must not receive.
                         if (sduLen <= 0) { sent++; continue; }
                         byte[] sdu = new byte[sduLen];
@@ -520,9 +526,8 @@ namespace TaskmanagerBridge
                     {
                         ChannelState ch;
                         lock (_channelLock) { _channels.TryGetValue(ChannelID, out ch); }
-                        // Drain only this channel's queue — SerialBridge.RxQueue is shared
-                        // across ALL open channels; draining it would discard frames for
-                        // other channels (e.g., a parallel ISO15765 flash session).
+                        // Drain only this channel's queue; SerialBridge.RxQueue is shared
+                        // across all open channels and must not be touched here.
                         if (ch != null) while (ch.RxQueue.TryTake(out _)) { }
                         Sniffa.LogTraffic("SYS_CLEAR_BUF", ioctlId, null);
                         return J2534Err.STATUS_NOERROR;
@@ -556,14 +561,14 @@ namespace TaskmanagerBridge
 
                     case IoctlID.FIVE_BAUD_INIT:
                     case IoctlID.FAST_INIT:
-                        // K-Line only — this DLL is CAN/ISO15765 only
+                        // K-Line protocols are not supported by this CAN/ISO15765 DLL
                         return J2534Err.ERR_NOT_SUPPORTED;
 
                     case IoctlID.READ_VBATT:
                     case IoctlID.READ_VBATT_EXT:
                     case IoctlID.READ_PROG_VOLTAGE:
                         if (pOutput != IntPtr.Zero)
-                            Marshal.WriteInt32(pOutput, 14200); // 14.2 V — healthy engine voltage
+                            Marshal.WriteInt32(pOutput, 14200); // 14.2 V, healthy engine voltage
                         Sniffa.LogTraffic("SYS_VBATT", 14200, null);
                         return J2534Err.STATUS_NOERROR;
 
@@ -815,7 +820,7 @@ namespace TaskmanagerBridge
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        // Frame Router — single background thread that reads raw CanFrames from
+        // Frame Router: single background thread that reads raw CanFrames from
         // SerialBridge and distributes them (with filter + ISO-TP processing)
         // into each open channel's private RxQueue.
         // ═════════════════════════════════════════════════════════════════════
@@ -877,7 +882,7 @@ namespace TaskmanagerBridge
             byte pci     = frame.Data[0];
             byte pciType = (byte)(pci & 0xF0);
 
-            // Flow Control — signal the waiting transmitter
+            // Flow Control: signal the waiting transmitter
             if (pciType == ISO_FC)
             {
                 if (frame.Data.Length >= 3)
@@ -937,7 +942,7 @@ namespace TaskmanagerBridge
                         byte sn = (byte)(pci & 0x0F);
                         if (sn != (ch.IsoRx.NextSN & 0x0F))
                         {
-                            ch.IsoRx.Active = false; // sequence error — abort
+                            ch.IsoRx.Active = false; // out-of-sequence CF, abort reassembly
                             break;
                         }
 
@@ -976,7 +981,8 @@ namespace TaskmanagerBridge
             }
             if (fc == null) return;
 
-            // Start with a standard CTS frame [0x30][BS][STmin][0xCC*5]
+            // Start with a standard CTS frame [0x30][BS][STmin][pad*5]
+            byte padByte = (byte)(ch.Iso15765_FramePadVal & 0xFF);
             byte[] frame = new byte[8];
             frame[0] = (byte)(ISO_FC | FC_CTS);
             frame[1] = (byte)(ch.Iso15765_BS    & 0xFF);
@@ -987,7 +993,7 @@ namespace TaskmanagerBridge
                 for (int i = 0; i < Math.Min((int)fc.FcDataSize, 3); i++)
                     frame[i] = fc.FcPayload[i];
 
-            for (int i = 3; i < 8; i++) frame[i] = ISO_PAD;
+            for (int i = 3; i < 8; i++) frame[i] = padByte;
 
             Sniffa.LogTraffic("TX_ISO_FC", fc.FcCanId, frame);
             SerialBridge.SendCanFrame(fc.FcCanId, frame, 8);
@@ -1008,17 +1014,18 @@ namespace TaskmanagerBridge
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        // ISO-TP transmit — handles segmentation and waits for flow control
+        // ISO-TP transmit: handles segmentation and waits for flow control
         // ═════════════════════════════════════════════════════════════════════
         private static int SendIsoTp(ChannelState ch, uint canId,
             byte[] sdu, bool padded, int timeoutMs)
         {
             if (timeoutMs <= 0) timeoutMs = 1000;
+            byte padByte = (byte)(ch.Iso15765_FramePadVal & 0xFF);
 
             if (sdu.Length <= 7)
             {
                 // Single Frame
-                byte[] sf = PaddedFrame(padded);
+                byte[] sf = PaddedFrame(padded, padByte);
                 sf[0] = (byte)(ISO_SF | sdu.Length);
                 Array.Copy(sdu, 0, sf, 1, sdu.Length);
                 Sniffa.LogTraffic("TX_ISO_SF", canId, sf);
@@ -1026,7 +1033,7 @@ namespace TaskmanagerBridge
             }
             else
             {
-                // First Frame — reset FC event BEFORE sending to avoid race where
+                // First Frame: reset FC event BEFORE sending to avoid race where
                 // the ECU delivers FC before we call Reset().
                 ch.IsoTx.FcReady.Reset();
                 ch.IsoTx.FcReceived = false;
@@ -1045,7 +1052,7 @@ namespace TaskmanagerBridge
                 if (rc != J2534Err.STATUS_NOERROR) return rc;
 
                 // Read FC parameters, then immediately arm the event for the next block
-                // BEFORE sending any CFs — eliminates the race at block boundaries.
+                // BEFORE sending any CFs, eliminating the race at block boundaries.
                 int blockSize = ch.IsoTx.FcBlockSize;
                 int stMinMs   = StMinToMs(ch.IsoTx.FcStMin);
                 ch.IsoTx.FcReady.Reset();
@@ -1060,7 +1067,7 @@ namespace TaskmanagerBridge
                 {
                     if (blockSize != 0 && blockCount >= blockSize)
                     {
-                        // Block exhausted — wait for next FC(CTS). Event was already
+                        // Block exhausted; wait for next FC(CTS). Event was already
                         // reset after the previous FC was processed (see above).
                         rc = WaitForFcCts(ch, timeoutMs);
                         if (rc != J2534Err.STATUS_NOERROR) return rc;
@@ -1072,7 +1079,7 @@ namespace TaskmanagerBridge
                         blockCount = 0;
                     }
 
-                    byte[] cf     = PaddedFrame(padded);
+                    byte[] cf     = PaddedFrame(padded, padByte);
                     cf[0]         = (byte)(ISO_CF | (sn & 0x0F));
                     int cfPayload = Math.Min(7, sdu.Length - offset);
                     Array.Copy(sdu, offset, cf, 1, cfPayload);
@@ -1090,11 +1097,12 @@ namespace TaskmanagerBridge
         }
 
         // Waits for FC(CTS), transparently looping through FC(WAIT) frames.
-        // Returns STATUS_NOERROR on CTS, ERR_NO_FLOW_CONTROL on timeout,
+        // Returns STATUS_NOERROR on CTS, ERR_NO_FLOW_CONTROL on timeout or WftMax exceeded,
         // ERR_BUFFER_OVERFLOW on FC(OVFL).
         private static int WaitForFcCts(ChannelState ch, int timeoutMs)
         {
             int remaining = timeoutMs;
+            int wftCount  = 0;
             while (remaining > 0)
             {
                 int start = Environment.TickCount;
@@ -1109,8 +1117,15 @@ namespace TaskmanagerBridge
                 if (status == FC_CTS)  return J2534Err.STATUS_NOERROR;
                 if (status == FC_OVFL) return J2534Err.ERR_BUFFER_OVERFLOW;
 
-                // FC_WAIT — reset and wait again; per ISO 15765-2 the ECU will
+                // FC_WAIT: reset and wait again; per ISO 15765-2 the ECU will
                 // send another FC before the N_Bs timeout expires.
+                wftCount++;
+                uint wftMax = ch.Iso15765_WftMax;
+                if (wftMax != 0 && (uint)wftCount > wftMax)
+                {
+                    _lastError.Value = "ISO-TP: exceeded maximum FC_WAIT count.";
+                    return J2534Err.ERR_NO_FLOW_CONTROL;
+                }
                 ch.IsoTx.FcReady.Reset();
                 ch.IsoTx.FcReceived = false;
             }
@@ -1118,17 +1133,17 @@ namespace TaskmanagerBridge
             return J2534Err.ERR_NO_FLOW_CONTROL;
         }
 
-        private static byte[] PaddedFrame(bool padded)
+        private static byte[] PaddedFrame(bool padded, byte padByte = ISO_PAD)
         {
             byte[] f = new byte[8];
-            if (padded) for (int i = 0; i < 8; i++) f[i] = ISO_PAD;
+            if (padded) for (int i = 0; i < 8; i++) f[i] = padByte;
             return f;
         }
 
         private static int StMinToMs(byte stMin)
         {
             if (stMin <= 0x7F) return stMin;
-            if (stMin >= 0xF1 && stMin <= 0xF9) return 1; // 100–900 µs → round to 1 ms
+            if (stMin >= 0xF1 && stMin <= 0xF9) return 1; // 100-900 us, round to 1 ms
             return 0;
         }
 
@@ -1175,10 +1190,14 @@ namespace TaskmanagerBridge
                 {
                     switch (cfg.Parameter)
                     {
-                        case ConfigParam.ISO15765_BS:    ch.Iso15765_BS       = cfg.Value; break;
-                        case ConfigParam.ISO15765_STMIN: ch.Iso15765_STMin    = cfg.Value; break;
-                        case ConfigParam.BS_TX:          ch.Iso15765_BS_Tx    = cfg.Value; break;
-                        case ConfigParam.STMIN_TX:       ch.Iso15765_STMin_Tx = cfg.Value; break;
+                        case ConfigParam.ISO15765_BS:            ch.Iso15765_BS           = cfg.Value; break;
+                        case ConfigParam.ISO15765_STMIN:         ch.Iso15765_STMin         = cfg.Value; break;
+                        case ConfigParam.BS_TX:                  ch.Iso15765_BS_Tx         = cfg.Value; break;
+                        case ConfigParam.STMIN_TX:               ch.Iso15765_STMin_Tx      = cfg.Value; break;
+                        case ConfigParam.ISO15765_FRAME_PAD_VAL: ch.Iso15765_FramePadVal   = cfg.Value & 0xFF; break;
+                        case ConfigParam.ISO15765_WFT_MAX:       ch.Iso15765_WftMax        = cfg.Value; break;
+                        // ISO15765_ADDR_TYPE: stored implicitly; extended addressing
+                        // (type != 0) requires firmware changes not yet available.
                     }
                 }
             }
@@ -1189,16 +1208,20 @@ namespace TaskmanagerBridge
         {
             switch (param)
             {
-                case ConfigParam.DATA_RATE:        return ch?.BaudRate ?? (uint)BridgeConfig.CanBaudRate;
-                case ConfigParam.LOOPBACK:         return 0;
-                case ConfigParam.BIT_SAMPLE_POINT: return 80;
-                case ConfigParam.SYNC_MODE:        return 0;
-                case ConfigParam.J1962_PINS:       return 0x030B; // Pin 6 = CAN_H, Pin 14 = CAN_L
-                case ConfigParam.ISO15765_BS:      return ch?.Iso15765_BS       ?? 0;
-                case ConfigParam.ISO15765_STMIN:   return ch?.Iso15765_STMin    ?? 0;
-                case ConfigParam.BS_TX:            return ch?.Iso15765_BS_Tx    ?? 0;
-                case ConfigParam.STMIN_TX:         return ch?.Iso15765_STMin_Tx ?? 25;
-                default:                           return 0;
+                case ConfigParam.DATA_RATE:              return ch?.BaudRate ?? (uint)BridgeConfig.CanBaudRate;
+                case ConfigParam.LOOPBACK:               return 0;
+                case ConfigParam.BIT_SAMPLE_POINT:       return 80;
+                case ConfigParam.SYNCH_JUMPWIDTH:        return 80;
+                case ConfigParam.SYNC_MODE:              return 0;
+                case ConfigParam.J1962_PINS:             return 0x030B; // Pin 6 = CAN_H, Pin 14 = CAN_L
+                case ConfigParam.ISO15765_BS:            return ch?.Iso15765_BS           ?? 0;
+                case ConfigParam.ISO15765_STMIN:         return ch?.Iso15765_STMin         ?? 0;
+                case ConfigParam.ISO15765_FRAME_PAD_VAL: return ch?.Iso15765_FramePadVal   ?? 0xCC;
+                case ConfigParam.ISO15765_ADDR_TYPE:     return 0;  // normal addressing only
+                case ConfigParam.BS_TX:                  return ch?.Iso15765_BS_Tx         ?? 0;
+                case ConfigParam.STMIN_TX:               return ch?.Iso15765_STMin_Tx      ?? 25;
+                case ConfigParam.ISO15765_WFT_MAX:       return ch?.Iso15765_WftMax        ?? 0;
+                default:                                 return 0;
             }
         }
 
