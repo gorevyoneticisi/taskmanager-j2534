@@ -315,4 +315,12 @@ The MCU exposes UART at **921 600 baud 8N1** (no hardware flow control).
 
 ## License
 
-MIT — add a `LICENSE` file before making the repository public.
+**Proprietary — All Rights Reserved.**
+
+See [LICENSE](LICENSE) for full terms. In short:
+
+- You may study and build for personal non-commercial use only.
+- You may NOT copy, redistribute, modify, or use commercially without written permission.
+- You may NOT reverse engineer or create derivative works.
+
+Copyright (c) 2026 Taskmanager Project.
