@@ -93,7 +93,7 @@ The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. F
 | Async non-blocking traffic log to %LOCALAPPDATA% | Yes |
 | 29-bit extended CAN IDs | Pending firmware v2 |
 | Dynamic baud rate switching | Pending firmware v2 |
-| UART RX checksum verification | Pending firmware v2 |
+| UART RX checksum verification | Yes |
 
 ---
 
@@ -203,11 +203,12 @@ Byte:  0      1      2      3      4      5 ... 4+N   5+N
 **STM32 to PC** (received CAN frame):
 
 ```
-Byte:  0      1      2      3      4 ... 3+N
-       0xBB   LEN    ID_H   ID_L   D0 ... Dn
+Byte:  0      1      2      3      4 ... 3+N   4+N
+       0xBB   LEN    ID_H   ID_L   D0 ... Dn   XOR
 ```
 
-No checksum on the v1 receive path. See known vulnerabilities below.
+- `XOR` = `ID_H ^ ID_L ^ D0 ^ ... ^ Dn`
+- The DLL verifies XOR and silently drops frames that fail the check
 
 ### Firmware v2 (planned, 29-bit IDs + baud rate switching + RX checksum)
 
@@ -379,12 +380,6 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 ---
 
 ## Known Vulnerabilities and Limitations
-
-### RX path has no checksum (firmware v1)
-
-The firmware v1 receive protocol `[0xBB][LEN][ID_H][ID_L][D0..Dn]` has no checksum. The STM32 guarantees CAN framing but not the UART line between the STM32 and the FT232H. A single dropped byte due to FTDI buffer overrun or electromagnetic interference will cause the DLL to parse misaligned bytes as valid CAN IDs.
-
-**Fix:** Firmware v2 adds an XOR checksum byte at the end of every receive packet. The DLL verifies and drops corrupted frames. Until firmware v2 is deployed, avoid using this adapter for ECU flashing in high-EMI environments.
 
 ### USB polling latency in the ISO-TP path
 
