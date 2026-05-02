@@ -253,10 +253,27 @@ namespace TaskmanagerOBD2Reader
             lock (_sessionLock) { s = _session; }
             if (s == null) { lblDtcStatus.Text = "Not connected."; return; }
 
+            // Stop the poll thread before touching the session — concurrent J2534
+            // calls on the same channel from two threads corrupt request/response pairing.
+            bool wasPolling = _polling;
+            if (wasPolling) StopPolling();
+
             listDtc.Items.Clear();
             List<string> dtcs;
-            try { dtcs = s.ReadDtcs(); }
-            catch (Exception ex) { lblDtcStatus.Text = $"Error: {ex.Message}"; return; }
+            try
+            {
+                dtcs = s.ReadDtcs();
+            }
+            catch (Exception ex)
+            {
+                lblDtcStatus.Text = $"Error: {ex.Message}";
+                if (wasPolling) StartPolling();
+                return;
+            }
+            finally
+            {
+                if (wasPolling) StartPolling();
+            }
 
             if (dtcs.Count == 0)
             {
@@ -284,9 +301,24 @@ namespace TaskmanagerOBD2Reader
             if (MessageBox.Show("Clear all stored fault codes?", "Confirm",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
+            bool wasPolling = _polling;
+            if (wasPolling) StopPolling();
+
             bool ok;
-            try { ok = s.ClearDtcs(); }
-            catch (Exception ex) { lblDtcStatus.Text = $"Error: {ex.Message}"; return; }
+            try
+            {
+                ok = s.ClearDtcs();
+            }
+            catch (Exception ex)
+            {
+                lblDtcStatus.Text = $"Error: {ex.Message}";
+                if (wasPolling) StartPolling();
+                return;
+            }
+            finally
+            {
+                if (wasPolling) StartPolling();
+            }
 
             listDtc.Items.Clear();
             lblDtcStatus.ForeColor = ok ? GREEN : RED;
@@ -413,17 +445,21 @@ namespace TaskmanagerOBD2Reader
 
         private void TryReadVinAndVoltage()
         {
-            ObdSession s;
-            lock (_sessionLock) { s = _session; }
-            if (s == null) return;
-
-            try
+            // Run on a background thread — VIN read blocks up to 1500 ms and
+            // must not freeze the UI. Poll loop hasn't started yet so no race.
+            new Thread(() =>
             {
-                string vin = s.ReadVin();
-                if (!string.IsNullOrEmpty(vin))
-                    BeginInvoke((Action)(() => lblVin.Text = $"VIN: {vin}"));
-            }
-            catch { }
+                ObdSession s;
+                lock (_sessionLock) { s = _session; }
+                if (s == null) return;
+                try
+                {
+                    string vin = s.ReadVin();
+                    if (!string.IsNullOrEmpty(vin))
+                        BeginInvoke((Action)(() => lblVin.Text = $"VIN: {vin}"));
+                }
+                catch { }
+            }) { IsBackground = true }.Start();
         }
 
         // ── UI helpers ──────────────────────────────────────────────────────────

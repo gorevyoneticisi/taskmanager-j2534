@@ -45,7 +45,7 @@ namespace TaskmanagerOBD2Reader
         public static List<string> DecodeDtcs(byte[] data, int offset, int count)
         {
             var list = new List<string>();
-            for (int i = offset; i + 1 < offset + count; i += 2)
+            for (int i = offset; i + 1 < offset + count && i + 1 < data.Length; i += 2)
             {
                 byte hi = data[i];
                 byte lo = data[i + 1];
