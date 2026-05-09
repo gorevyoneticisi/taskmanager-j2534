@@ -1,11 +1,12 @@
 # Taskmanager J2534 Bridge
 
-A SAE J2534-1 v04.04 compliant PassThru DLL written in C# (.NET Framework 4.7.2, x86) that bridges a custom STM32F407-based CAN adapter to Windows OBD2 diagnostic software.
+A CAN/ISO15765-focused SAE J2534-1 v04.04 PassThru DLL written in C# (.NET Framework 4.7.2, x86) that bridges a custom STM32F407-based CAN adapter to Windows OBD2 diagnostic software.
+
+Current support focuses on CAN and ISO15765. Additional J2534 protocols are planned for future hardware/firmware updates.
 
 Tested against: **Toyota Techstream**, **VW ODIS 25**, **Ford IDS**, and CAN/ISO15765-based J2534-1 v04.04 diagnostic applications.
 
 Not supported: **VCDS (VAG-COM)**, because Ross-Tech requires its own proprietary HEX/HEX-NET/HEX-V2 hardware and does not provide normal third-party J2534 operation.
-
 ---
 
 ## Hardware Stack
