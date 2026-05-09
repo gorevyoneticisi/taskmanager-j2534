@@ -15,7 +15,7 @@ A **SAE J2534-1 v04.04** compliant PassThru DLL written in C# (.NET Framework 4.
 
 ## Why This Exists
 
-Every commercial J2534 interface ships with a proprietary DLL that locks you to their hardware. This project breaks that dependency: the DLL implements the **complete J2534-1 v04.04 specification in software**, while the STM32 firmware is kept intentionally thin. It only moves raw CAN frames over UART. Swap the hardware, keep the software.
+Every commercial J2534 interface ships with a proprietary DLL that locks you to their hardware. This project breaks that dependency: the DLL implements the **J2534-1 v04.04 PassThru API for CAN and ISO15765 in software, with additional protocols planned for future hardware/firmware updates**, while the STM32 firmware is kept intentionally thin. It only moves raw CAN frames over UART. Swap the hardware, keep the software.
 
 ---
 
