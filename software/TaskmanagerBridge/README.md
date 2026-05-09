@@ -2,7 +2,9 @@
 
 A SAE J2534-1 v04.04 compliant PassThru DLL written in C# (.NET Framework 4.7.2, x86) that bridges a custom STM32F407-based CAN adapter to Windows OBD2 diagnostic software.
 
-Tested against: **Toyota Techstream**, **VW ODIS 25**, **Ford IDS**, **VCDS (VAG-COM)**, and any J2534-1 v04.04 compliant application.
+Tested against: **Toyota Techstream**, **VW ODIS 25**, **Ford IDS**, and CAN/ISO15765-based J2534-1 v04.04 diagnostic applications.
+
+Not supported: **VCDS (VAG-COM)**, because Ross-Tech requires its own proprietary HEX hardware and does not provide normal third-party J2534 operation.
 
 ---
 
