@@ -197,4 +197,4 @@ TaskmanagerBridge/
 
 ## License
 
-MIT — see `LICENSE` file (add one before publishing).
+Proprietary - All Rights Reserved
