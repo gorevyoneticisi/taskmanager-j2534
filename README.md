@@ -2,14 +2,18 @@
 
 [![Build J2534 DLL](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml/badge.svg)](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml)
 
-A **SAE J2534-1 v04.04** compliant PassThru DLL written in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to any Windows OBD2 diagnostic application. No proprietary drivers, no locked hardware.
+A **CAN/ISO15765-focused SAE J2534-1 v04.04** PassThru DLL written in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to Windows diagnostic applications that support J2534 over CAN. No proprietary drivers, no locked hardware.
 
 **Confirmed working with:**
 - Toyota Techstream
 - VW ODIS 25
 - Ford IDS
-- BMW ISTA-D
-- Any J2534-1 v04.04 compliant application
+
+**Expected compatible with:**
+- CAN/ISO15765-based J2534-1 v04.04 diagnostic applications
+- Modern vehicles using standard 11-bit CAN / ISO15765 diagnostics
+
+Additional J2534 protocols and physical layers are planned for future hardware/firmware updates.
 
 ---
 
@@ -23,54 +27,58 @@ Every commercial J2534 interface ships with a proprietary DLL that locks you to 
 
 ### Tools that work with this adapter
 
-The adapter supports CAN and ISO15765 (UDS). Any tool that uses J2534 to communicate over those protocols on modern vehicles (roughly 2008 and newer) is compatible.
+The current adapter supports **CAN and ISO15765 (UDS)**. Any diagnostic tool that uses J2534 to communicate over those protocols on modern vehicles is a realistic target for compatibility.
 
-| Manufacturer | Tool | J2534 | Works |
+Confirmed means the tool has been tested with this project. Expected means the tool should work when it uses standard J2534 CAN/ISO15765, but has not yet been fully validated across vehicles and modules.
+
+| Manufacturer | Tool | J2534 | Status |
 |---|---|---|---|
-| Toyota / Lexus / Scion | Techstream | Yes | **Yes** - confirmed |
-| VW / Audi / Seat / Skoda / Bentley | ODIS | Yes | **Yes** - confirmed |
-| BMW / Mini / Rolls Royce | ISTA-D, ISTA-P | Yes | **Yes** |
-| Mercedes-Benz / Smart | XENTRY / DAS | Yes | **Yes** (CAN vehicles) |
-| Ford / Lincoln | IDS | Yes | **Yes** - confirmed |
-| Ford / Lincoln | FDRS | Yes | **Yes** |
-| Ford / Lincoln (3rd party) | FORScan | Yes | **Yes** |
-| GM (Chevrolet / GMC / Buick / Cadillac) | GDS2 | Yes | **Yes** (standard CAN modules) |
-| GM | Tech2Win | Yes | **Yes** |
-| Honda / Acura | i-HDS, HDS | Yes | **Yes** |
-| Nissan / Infiniti | Consult III Plus | Yes | **Yes** |
-| FCA (Chrysler / Dodge / Jeep / Ram / Fiat / Alfa) | wiTECH 2.0 | Yes | **Yes** |
-| FCA (3rd party) | MultiECUScan | Yes | **Yes** (CAN vehicles) |
-| PSA (Peugeot / Citroen) | DiagBox | Yes | **Yes** |
-| Volvo | VIDA | Yes | **Yes** |
-| Subaru | SSM4 (Select Monitor 4) | Yes | **Yes** |
-| Mazda | MDARS, IDS Legacy | Yes | **Yes** |
-| Hyundai / Kia | GDS, KDS | Yes | **Yes** |
-| Jaguar / Land Rover | Pathfinder, SDD | Yes | **Yes** |
-| Porsche | PIWIS III | Yes | **Yes** |
-| VW Group (3rd party) | VCDS (VAG-COM) | No | **No** - Ross-Tech hardware only |
-| Renault / Dacia | CAN Clip | Partial | **Partial** - requires special registry setup |
+| Toyota / Lexus / Scion | Techstream | Yes | **Confirmed** |
+| VW / Audi / Seat / Skoda / Bentley | ODIS | Yes | **Confirmed** |
+| Ford / Lincoln | IDS | Yes | **Confirmed** |
+| BMW / Mini / Rolls Royce | ISTA-D, ISTA-P | Yes | **Expected** - CAN vehicles |
+| Mercedes-Benz / Smart | XENTRY / DAS | Yes | **Expected** - CAN vehicles |
+| Ford / Lincoln | FDRS | Yes | **Expected** - CAN vehicles |
+| Ford / Lincoln (3rd party) | FORScan | Yes | **Expected** - CAN vehicles |
+| GM (Chevrolet / GMC / Buick / Cadillac) | GDS2 | Yes | **Expected** - standard CAN modules |
+| GM | Tech2Win | Yes | **Expected** - standard CAN modules |
+| Honda / Acura | i-HDS, HDS | Yes | **Expected** - CAN vehicles |
+| Nissan / Infiniti | Consult III Plus | Yes | **Expected** - CAN vehicles |
+| FCA (Chrysler / Dodge / Jeep / Ram / Fiat / Alfa) | wiTECH 2.0 | Yes | **Expected** - CAN vehicles |
+| FCA (3rd party) | MultiECUScan | Yes | **Expected** - CAN vehicles |
+| PSA (Peugeot / Citroen) | DiagBox | Yes | **Expected** - CAN vehicles |
+| Volvo | VIDA | Yes | **Expected** - CAN vehicles |
+| Subaru | SSM4 (Select Monitor 4) | Yes | **Expected** - CAN vehicles |
+| Mazda | MDARS, IDS Legacy | Yes | **Expected** - CAN vehicles |
+| Hyundai / Kia | GDS, KDS | Yes | **Expected** - CAN vehicles |
+| Jaguar / Land Rover | Pathfinder, SDD | Yes | **Expected** - CAN vehicles |
+| Porsche | PIWIS III | Yes | **Expected** - CAN vehicles |
+| VW Group (3rd party) | VCDS (VAG-COM) | No | **Not supported** - Ross-Tech hardware only |
+| Renault / Dacia | CAN Clip | Partial | **Partial** - may require special registry setup |
 
 ### Why VCDS does not work
 
-VCDS by Ross-Tech requires their own proprietary HEX-NET or HEX-V2 hardware. It does not have a J2534 interface mode. You cannot use a third-party J2534 device with VCDS.
+VCDS by Ross-Tech requires their own proprietary HEX-NET or HEX-V2 hardware. It does not provide a normal third-party J2534 interface mode. You cannot use a generic J2534 device with VCDS.
 
 ### Why some vehicles in the list may not work
 
-This adapter supports **CAN and ISO15765 only**. It does not support K-line (ISO9141 / ISO14230 KWP2000) or J1850. If your specific vehicle uses K-line diagnostics (typically pre-2008 non-European vehicles), the adapter will not communicate with that vehicle even if the diagnostic software supports J2534.
+This adapter currently supports **CAN and ISO15765 only**. It does not support K-line (ISO9141 / ISO14230 KWP2000), J1850, SWCAN, CAN FD, or DoIP. If your specific vehicle or module uses one of those protocols, the adapter will not communicate with that module even if the diagnostic software itself supports J2534.
 
 Examples of what will not work on unsupported vehicles:
 - Honda pre-2008 K-line ECUs with i-HDS
 - Older Subaru vehicles using the proprietary SSM3 serial protocol
 - Older FCA vehicles using K-line with MultiECUScan
 - Pre-CAN Jaguar / Land Rover vehicles with SDD
+- GM body/HVAC modules that require SWCAN
+- Newer vehicles that require CAN FD or DoIP
 
 ### GM SWCAN modules
 
-GDS2 communicates over SWCAN (Single Wire CAN at 33.3 kbps) for some GM-specific modules such as HVAC and body control. SWCAN requires different hardware and a different J2534 protocol ID (0x08). This adapter does not support SWCAN. GDS2 will work correctly for all standard OBD2 and powertrain diagnostics over regular 500 kbps CAN.
+GDS2 communicates over SWCAN (Single Wire CAN at 33.3 kbps) for some GM-specific modules such as HVAC and body control. SWCAN requires different hardware and a different J2534 protocol ID. This adapter does not currently support SWCAN. GDS2-style diagnostics are limited to standard OBD2 and powertrain diagnostics over regular high-speed CAN.
 
 ### CAN FD vehicles
 
-The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. For VAG Group vehicles from approximately 2021 onward, the diagnostic gateway uses CAN FD. Hardware v2 will require an MCU with an FDCAN peripheral (STM32G4 series) and a CAN FD capable transceiver.
+The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. For vehicles that require CAN FD at the diagnostic gateway, hardware v2 will require an MCU with an FDCAN peripheral, such as STM32G4/STM32H7, and a CAN FD capable transceiver.
 
 ---
 
@@ -80,6 +88,8 @@ The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. F
 |---------|--------|
 | All 14 J2534 mandatory exports | Yes |
 | Correct J2534 v04.04 constants (IoctlID, ConfigParam, error codes) | Yes |
+| CAN protocol support | Yes |
+| ISO15765 protocol support | Yes |
 | Multi-channel support (CAN + ISO15765 simultaneously) | Yes |
 | ISO15765-2 transport layer in DLL (segmentation, reassembly, FC) | Yes |
 | FC_WAIT handling in transmit path | Yes |
@@ -88,18 +98,22 @@ The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. F
 | PASS_FILTER / BLOCK_FILTER / FLOW_CONTROL_FILTER per channel | Yes |
 | Periodic messages with real System.Threading.Timer | Yes |
 | SET_CONFIG persists ISO15765_BS / STMIN / BS_TX / STMIN_TX per channel | Yes |
-| RxStatus flags (START_OF_MESSAGE, CAN_29BIT_ID) | Yes |
+| RxStatus flags (START_OF_MESSAGE, CAN_29BIT_ID) | Partial |
 | Battery voltage 14200 mV for Techstream/ODIS compatibility | Yes |
 | Async non-blocking traffic log to %LOCALAPPDATA% | Yes |
+| UART RX checksum verification | Yes |
 | 29-bit extended CAN IDs | Pending firmware v2 |
 | Dynamic baud rate switching | Pending firmware v2 |
-| UART RX checksum verification | Yes |
+| K-line / ISO9141 / ISO14230 | Planned future hardware |
+| J1850 PWM / VPW | Planned future hardware |
+| SWCAN | Planned future hardware |
+| CAN FD | Planned future hardware |
 
 ---
 
 ## Architecture
 
-```
+```text
 +---------------------------------------------------+
 |           Diagnostic Application                  |
 |   (Techstream / ODIS / ISTA / XENTRY / IDS / ...) |
@@ -135,7 +149,7 @@ The STM32 firmware is deliberately kept simple. Every protocol decision lives in
 
 ## Repository Layout
 
-```
+```text
 taskmanager-j2534/
 +-- software/
 |   +-- TaskmanagerBridge/
@@ -149,6 +163,8 @@ taskmanager-j2534/
 |       +-- TaskmanagerBridge.sln
 +-- firmware/
 |   +-- stm32-bridge/             STM32CubeIDE project for STM32F407VET6
++-- simulator/
+|   +-- esp32-obd2-simulator/     ESP32 CAN/OBD2 simulator for bench testing
 +-- .github/workflows/build.yml   CI: builds the DLL on every push
 ```
 
@@ -156,7 +172,7 @@ taskmanager-j2534/
 
 ## Hardware Stack
 
-```
+```text
 PC (USB)
   |
   v 921600 baud 8N1
@@ -191,7 +207,7 @@ CAN bus (vehicle)
 
 **PC to STM32** (send a CAN frame):
 
-```
+```text
 Byte:  0      1      2      3      4      5 ... 4+N   5+N
        0xAA   0x01   ID_H   ID_L   LEN    D0 ... Dn   XOR
 ```
@@ -202,7 +218,7 @@ Byte:  0      1      2      3      4      5 ... 4+N   5+N
 
 **STM32 to PC** (received CAN frame):
 
-```
+```text
 Byte:  0      1      2      3      4 ... 3+N   4+N
        0xBB   LEN    ID_H   ID_L   D0 ... Dn   XOR
 ```
@@ -214,21 +230,21 @@ Byte:  0      1      2      3      4 ... 3+N   4+N
 
 **PC to STM32** (send CAN frame, 4-byte ID):
 
-```
+```text
 Byte:  0      1      2      3      4      5      6      7 ... 6+N   7+N
        0xAA   0x01   ID3    ID2    ID1    ID0    LEN    D0 ... Dn   XOR
 ```
 
 **PC to STM32** (set CAN baud rate):
 
-```
+```text
 Byte:  0      1      2      3      4      5      6
        0xAA   0x02   B3     B2     B1     B0     XOR
 ```
 
 **STM32 to PC** (received CAN frame, with checksum):
 
-```
+```text
 Byte:  0      1      2      3      4      5      6      7 ... 6+N   7+N
        0xBB   LEN    ID3    ID2    ID1    ID0    D0 ... Dn   XOR
 ```
@@ -241,7 +257,7 @@ Byte:  0      1      2      3      4      5      6      7 ... 6+N   7+N
 
 ## ISO15765-2 Transport Layer
 
-The DLL handles the full ISO-TP protocol. Your application sends and receives complete SDUs; the DLL handles all framing.
+The DLL handles the ISO-TP protocol for CAN/ISO15765 communication. Your application sends and receives complete SDUs; the DLL handles all framing.
 
 **Transmit:**
 
@@ -313,7 +329,7 @@ Write-Host "Registered."
 
 ### Step 3 - First launch
 
-Open your diagnostic app. The DLL shows a COM port picker on the first run. Select the FT232H port (usually the highest COM number), choose CAN speed (500 kbps for most vehicles), and click Connect. Check "Remember these settings" to skip the dialog on future launches.
+Open your diagnostic app. The DLL shows a COM port picker on the first run. Select the FT232H port, usually the highest COM number, choose the CAN speed, usually 500 kbps for modern vehicles, and click Connect. Check "Remember these settings" to skip the dialog on future launches.
 
 ### Uninstalling
 
@@ -328,77 +344,91 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 ### Toyota Techstream
 - Calls `READ_VBATT_EXT (0x10001)` - returns 14200 mV
 - Expects `ERR_BUFFER_EMPTY (0x10)` when no frames are queued
+- Confirmed working over CAN/ISO15765
 
 ### VW / Audi ODIS
-- Calls `READ_VBATT_EXT` frequently; below 8000 mV triggers abort
+- Calls `READ_VBATT_EXT` frequently; below 8000 mV may trigger an abort
 - Sends `GET_CONFIG` / `SET_CONFIG` frequently
+- Confirmed working over CAN/ISO15765
+
+### Ford IDS / FDRS
+- IDS is sensitive to null-terminated version strings; `PassThruReadVersion` guarantees null termination within 80 bytes
+- IDS confirmed working over CAN/ISO15765
+- FDRS is expected to work on CAN-based vehicles
 
 ### BMW ISTA-D / ISTA-P
 - Calls `SET_CONFIG(ISO15765_FRAME_PAD_VAL)` to configure the padding byte
-- The DLL now supports this parameter per channel (defaults to 0xCC; ISTA typically sets 0x00)
-- Works with ISTA on CAN vehicles; vehicles requiring DoIP are not supported
+- The DLL supports this parameter per channel, defaulting to 0xCC; ISTA typically sets 0x00
+- Expected to work with ISTA on CAN vehicles
+- Vehicles requiring DoIP are not supported
 
 ### Mercedes-Benz XENTRY / DAS
 - Standard J2534 v04.04 over CAN/ISO15765
 - Requires valid battery voltage from `READ_VBATT`
-
-### Ford IDS / FDRS
-- IDS is sensitive to null-terminated version strings; `PassThruReadVersion` guarantees null termination within 80 bytes
-- FDRS uses J2534 for CAN-based vehicles
+- Expected on CAN vehicles
 
 ### GM GDS2 / Tech2Win
-- Standard CAN and ISO15765 diagnostics work
-- SWCAN modules (body control, HVAC) are not supported by this hardware
+- Standard CAN and ISO15765 diagnostics are expected to work
+- SWCAN modules, such as body control and HVAC, are not supported by this hardware
 
 ### Honda i-HDS / HDS
-- Standard J2534 over CAN/ISO15765 for vehicles from approximately 2008 onward
+- Expected over CAN/ISO15765 for vehicles from approximately 2008 onward
+- Older K-line vehicles are not supported
 
 ### Nissan Consult III Plus
-- Standard J2534 over CAN/ISO15765
+- Expected over CAN/ISO15765 on CAN vehicles
 
 ### FCA wiTECH 2.0 / MultiECUScan
-- Modern CAN vehicles work
-- K-line FCA vehicles (pre-2007) are not supported
+- Modern CAN vehicles are expected to work
+- K-line FCA vehicles are not supported
 
 ### PSA DiagBox / Volvo VIDA / Mazda MDARS
-- Standard J2534 CAN/ISO15765
+- Expected over standard J2534 CAN/ISO15765 where the vehicle uses CAN diagnostics
 
 ### Subaru SSM4
-- SSM4 supports J2534; works for CAN-based Subaru vehicles
+- SSM4 supports J2534 and is expected to work for CAN-based Subaru vehicles
 - SSM3 uses a proprietary Subaru serial protocol and does not use J2534
 
 ### Hyundai / Kia GDS / KDS
-- Standard J2534 over CAN/ISO15765
+- Expected over CAN/ISO15765 on CAN vehicles
 
 ### Jaguar / Land Rover Pathfinder / SDD
-- Modern CAN vehicles work
-- Pre-CAN vehicles require K-line which is not supported
+- Modern CAN vehicles are expected to work
+- Pre-CAN vehicles require K-line, which is not supported
 
 ### Porsche PIWIS III
-- Supports J2534 as a VCI interface option
+- Expected only where PIWIS is configured to use a standard J2534 CAN interface
 
 ---
 
 ## Known Vulnerabilities and Limitations
 
+### Current protocol scope
+
+This project currently targets **CAN and ISO15765**. It does not currently implement K-line, J1850, SWCAN, CAN FD, DoIP, or brand-specific proprietary serial protocols. Those require additional hardware, firmware work, and validation.
+
 ### USB polling latency in the ISO-TP path
 
 Because the DLL handles ISO-TP segmentation on the PC side, the turnaround path for each flow control exchange is:
 
-```
+```text
 PC calculates CF -> USB to FT232H -> UART to STM32 -> CAN to ECU
 ECU replies -> CAN to STM32 -> UART to FT232H -> USB polling tick (1ms) -> PC
 ```
 
-The FT232H USB polling interval introduces 1-2 ms of latency per round trip. For standard UDS diagnostics this is invisible. For flashing large firmware images, this latency extends flash times compared to OEM tools. This cannot be eliminated without hardware v2.
+The FT232H USB polling interval introduces 1-2 ms of latency per round trip. For standard UDS diagnostics this is usually invisible. For flashing large firmware images, this latency may extend flash times compared to OEM tools. This cannot be eliminated without hardware v2.
 
 ### UART baud rate is not the bottleneck
 
-921600 baud carries roughly 92000 bytes per second. A fully saturated 500 kbps CAN bus at 12 bytes per frame produces approximately 48000 bytes per second. The UART link has headroom. Raising the baud rate does not improve diagnostic speed.
+921600 baud carries roughly 92000 bytes per second. A fully saturated 500 kbps CAN bus at 12 bytes per frame produces approximately 48000 bytes per second. The UART link has headroom. Raising the baud rate alone does not improve diagnostic speed.
 
 ### CAN FD not supported
 
-The SN65HVD230 and STM32F407 CAN peripheral do not support CAN FD. VAG Group vehicles from approximately 2021 onward use CAN FD at the diagnostic gateway. Hardware v2 requires an STM32G4 (FDCAN peripheral) and a CAN FD transceiver.
+The SN65HVD230 and STM32F407 CAN peripheral do not support CAN FD. Vehicles that require CAN FD at the diagnostic gateway need hardware v2 with an FDCAN-capable MCU and CAN FD transceiver.
+
+### Vehicle safety
+
+This project is experimental. Do not use it for programming, flashing, immobilizer work, airbag work, brake/steering modules, or other safety-critical procedures unless you understand the risks and have validated the hardware and software on the bench first.
 
 ---
 
@@ -406,19 +436,30 @@ The SN65HVD230 and STM32F407 CAN peripheral do not support CAN FD. VAG Group veh
 
 The single highest-impact improvement for hardware v2 is removing the FT232H entirely.
 
-The STM32F407 has a native Full-Speed USB 2.0 peripheral (12 Mbit/s) built into the silicon. By programming the STM32 as a WinUSB Bulk endpoint or USB CDC device, the PC talks directly to the MCU over USB. The UART baud rate limit disappears, the FT232H chip is removed from the BOM, and latency drops to the minimum the Windows USB stack allows. That is the architecture that matches the throughput of OEM dealership tools.
+The STM32F407 has a native Full-Speed USB 2.0 peripheral (12 Mbit/s) built into the silicon. By programming the STM32 as a WinUSB Bulk endpoint or USB CDC device, the PC talks directly to the MCU over USB. The UART baud rate limit disappears, the FT232H chip is removed from the BOM, and latency drops to the minimum the Windows USB stack allows. That architecture is closer to how professional dealership tools handle high-throughput diagnostic traffic.
+
+Planned hardware/firmware improvements:
+- Native USB transport
+- 29-bit extended CAN IDs
+- Dynamic CAN baud-rate switching
+- Additional CAN channel
+- SWCAN support
+- K-line / L-line support
+- CAN FD support
+- Better input protection for real vehicle use
+- Firmware version reporting and update mechanism
 
 ---
 
 ## Traffic Log
 
-```
+```text
 %LOCALAPPDATA%\TaskmanagerBridge\traffic.log
 ```
 
 Example:
 
-```
+```text
 [14:22:01.123] SYS_OPEN         | ID: 0x00000000 | DATA: 43 4F 4D 37
 [14:22:01.456] SYS_CONNECT      | ID: 0x0001D4C0 | DATA: 06 00
 [14:22:01.789] TX_ISO_SF        | ID: 0x000007DF | DATA: 02 01 00 CC CC CC CC CC
@@ -426,7 +467,7 @@ Example:
 [14:22:01.834] RX               | ID: 0x000007E8 | DATA: 10 14 49 02 01 31 47 31
 ```
 
-The log queue is bounded at 10000 entries. Entries are dropped (never queued) when full so the J2534 caller thread is never delayed by disk I/O.
+The log queue is bounded at 10000 entries. Entries are dropped, never queued, when full so the J2534 caller thread is never delayed by disk I/O.
 
 ---
 
@@ -460,6 +501,27 @@ Open `firmware/stm32-bridge` in STM32CubeIDE:
 3. Connect ST-Link, then Run > Debug (F11) to flash
 
 The MCU exposes UART at **921600 baud 8N1**, no hardware flow control.
+
+---
+
+## ESP32 OBD2 Simulator
+
+This repository also includes an ESP32-based OBD2 simulator for bench testing:
+
+```text
+simulator/esp32-obd2-simulator/
+```
+
+The simulator can be used to test CAN/ISO15765 behaviour without connecting to a real vehicle. It exposes a Wi-Fi access point and a simple web control panel for simulated OBD2 data.
+
+Default simulator settings:
+- CAN TX: GPIO5
+- CAN RX: GPIO4
+- CAN speed: 500 kbps
+- Wi-Fi SSID: `OBD2-Simulator`
+- Web panel: `http://192.168.4.1`
+
+Use the simulator for development and bench validation before connecting the adapter to a real vehicle.
 
 ---
 
