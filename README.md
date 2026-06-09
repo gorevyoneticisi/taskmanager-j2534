@@ -1,6 +1,30 @@
 # Taskmanager J2534 Bridge
 
 [![Build J2534 DLL](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml/badge.svg)](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml)
+![Standard](https://img.shields.io/badge/SAE_J2534--1-v04.04-blue)
+![Protocols](https://img.shields.io/badge/CAN_%2F_ISO15765-supported-success)
+![Techstream](https://img.shields.io/badge/Toyota_Techstream-connected-brightgreen)
+![Platform](https://img.shields.io/badge/Windows-7_%E2%86%92_11-informational)
+
+> ### One open cable. The real dealer software. A fraction of the price.
+>
+> Most professional diagnostic interfaces lock you to one brand and cost **$300–$500 each**. The Taskmanager J2534 Bridge is a single, open, galvanically-isolated adapter that speaks the **universal J2534 standard the OEM tools already use** — so the *actual dealer software* talks to the car through hardware you can build and own.
+
+<p align="center">
+  <img src="images/20260430_175219.jpg" alt="Taskmanager J2534 Bridge — hand-built prototype" width="600"><br>
+  <em>Hand-built prototype — STM32F407 + isolated CAN front-end — already running real OEM dealer software.</em>
+</p>
+
+<p align="center">
+  <img src="images/taskmanager-obd-reader.png" alt="Taskmanager OBD2 Reader companion app" width="560"><br>
+  <em>The companion live-data / fault-code app that ships alongside the bridge.</em>
+</p>
+
+<p align="center">
+  <b><a href="https://github.com/sponsors/gorevyoneticisi">💛 Sponsor the build</a> &nbsp;•&nbsp; <a href="#-support--sponsorship">🤝 Partner / Inquire</a> &nbsp;•&nbsp; ⭐ Star to follow along</b>
+</p>
+
+---
 
 A **CAN/ISO15765-focused SAE J2534-1 v04.04** PassThru DLL written in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to Windows diagnostic applications that support J2534 over CAN. No proprietary drivers, no locked hardware.
 
@@ -525,14 +549,27 @@ Use the simulator for development and bench validation before connecting the ada
 
 ---
 
-## Support
+## 💛 Support & Sponsorship
 
-If this project saved you money on a dealership diagnostic bill, consider buying me a coffee.
+This is an independent, self-funded project. Every board was bought, soldered, and debugged by one engineer who didn't accept that diagnosing your own car should cost €500 per brand — and who got the *real* dealer software (Toyota Techstream, VW ODIS, Ford IDS) running on an open, isolated adapter that anyone can understand.
 
-- **Revolut:** `@gorevyoneticisi`
-- **PayPal:** `gorevyoneticisi`
+If this saved you a dealership bill, or you simply believe vehicle diagnostics should be open and affordable, your support pushes the project to the next milestone.
 
-For custom builds, hardware questions, or integration help with a specific diagnostic tool, open an issue or reach out directly via GitHub.
+### What sponsorship unlocks — Hardware v2
+Funding goes straight into hardware, not coffee:
+- 🔌 **Native USB** transport (drop the FT232H, cut latency to the minimum)
+- 🆔 **29-bit extended IDs** + dynamic CAN baud switching
+- 🧩 Wider protocol coverage: **K-line, SWCAN, CAN FD**
+- 🛡️ Proper automotive-grade input protection for daily real-vehicle use
+- 🏭 The jump from hand-soldered prototype to a manufacturable board
+
+### Ways to support
+- ⭐ **Star this repo** — free, and it genuinely helps visibility
+- 💛 **GitHub Sponsors:** [github.com/sponsors/gorevyoneticisi](https://github.com/sponsors/gorevyoneticisi)
+- ☕ **Revolut:** [revolut.me/gorevyoneticisi](https://revolut.me/gorevyoneticisi) · **PayPal:** [paypal.me/gorevyoneticisi](https://paypal.me/gorevyoneticisi)
+
+### For companies, shops & inquiries
+Custom builds, integration help with a specific OEM tool, fleet/workshop deployments, or **sponsorship & partnership** — open an issue or reach out via GitHub. Serious inquiries are very welcome, and this project is actively looking for backers and collaborators to bring an affordable universal diagnostic interface to market. 🚀
 
 ---
 
