@@ -126,12 +126,16 @@ The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. F
 | Battery voltage 14200 mV for Techstream/ODIS compatibility | Yes |
 | Async non-blocking traffic log to %LOCALAPPDATA% | Yes |
 | UART RX checksum verification | Yes |
-| 29-bit extended CAN IDs | Pending firmware v2 |
-| Dynamic baud rate switching | Pending firmware v2 |
+| 29-bit extended CAN IDs | ✅ Supported (v2) |
+| Dynamic CAN baud-rate switching | ✅ Supported (v2) |
+| Automatic adapter / COM-port detection | ✅ Supported (v2) |
+| Toyota Techstream VIM connection | ✅ Confirmed (v2) |
 | K-line / ISO9141 / ISO14230 | Planned future hardware |
 | J1850 PWM / VPW | Planned future hardware |
 | SWCAN | Planned future hardware |
 | CAN FD | Planned future hardware |
+
+> **✅ (v2)** items are implemented and working in the current **v2 build** — 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection, and validated Toyota Techstream VIM connection. This public repository ships the **v1** firmware (standard 11-bit CAN); the v2 firmware + DLL are in active development ahead of a product launch. Interested in v2, early access, or a ready-to-run unit? See [Support & Sponsorship](#-support--sponsorship).
 
 ---
 
