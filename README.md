@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <b><a href="https://github.com/sponsors/gorevyoneticisi">💛 Sponsor the build</a> &nbsp;•&nbsp; <a href="#-support--sponsorship">🤝 Partner / Inquire</a> &nbsp;•&nbsp; ⭐ Star to follow along</b>
+  <b><a href="https://github.com/sponsors/gorevyoneticisi"> Sponsor the build</a> &nbsp;•&nbsp; <a href="#-support--sponsorship"> Partner / Inquire</a> &nbsp;•&nbsp;  Star to follow along</b>
 </p>
 
 ---
@@ -137,16 +137,16 @@ The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. F
 | Battery voltage 14200 mV for Techstream/ODIS compatibility | Yes |
 | Async non-blocking traffic log to %LOCALAPPDATA% | Yes |
 | UART RX checksum verification | Yes |
-| 29-bit extended CAN IDs | ✅ Supported (v2) |
-| Dynamic CAN baud-rate switching | ✅ Supported (v2) |
-| Automatic adapter / COM-port detection | ✅ Supported (v2) |
-| Toyota Techstream VIM connection | ✅ Confirmed (v2) |
+| 29-bit extended CAN IDs |  Supported (v2) |
+| Dynamic CAN baud-rate switching |  Supported (v2) |
+| Automatic adapter / COM-port detection |  Supported (v2) |
+| Toyota Techstream VIM connection |  Confirmed (v2) |
 | K-line / ISO9141 / ISO14230 | Planned future hardware |
 | J1850 PWM / VPW | Planned future hardware |
 | SWCAN | Planned future hardware |
 | CAN FD | Planned future hardware |
 
-> **✅ (v2)** items are implemented and working in the current **v2 build**, 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection, and validated Toyota Techstream VIM connection. This public repository ships the **v1** firmware (standard 11-bit CAN); the v2 firmware + DLL are in active development ahead of a product launch. Interested in v2, early access, or a ready-to-run unit? See [Support & Sponsorship](#-support--sponsorship).
+> ** (v2)** items are implemented and working in the current **v2 build**, 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection, and validated Toyota Techstream VIM connection. This public repository ships the **v1** firmware (standard 11-bit CAN); the v2 firmware + DLL are in active development ahead of a product launch. Interested in v2, early access, or a ready-to-run unit? See [Support & Sponsorship](#-support--sponsorship).
 
 ---
 
@@ -564,7 +564,7 @@ Use the simulator for development and bench validation before connecting the ada
 
 ---
 
-## 💛 Support & Sponsorship
+##  Support & Sponsorship
 
 This is an independent, self-funded project. Every board was bought, soldered, and debugged by one engineer who didn't accept that diagnosing your own car should cost €500 per brand, and who got the *real* dealer software (Toyota Techstream, VW ODIS, Ford IDS) running on an open, isolated adapter that anyone can understand.
 
@@ -572,20 +572,20 @@ If this saved you a dealership bill, or you simply believe vehicle diagnostics s
 
 ### What sponsorship unlocks, Hardware v2
 Funding goes straight into hardware, not coffee:
-- 🔌 **Native USB** transport (drop the FT232H, cut latency to the minimum)
-- 🆔 **29-bit extended IDs** + dynamic CAN baud switching
-- 🧩 Wider protocol coverage: **K-line, SWCAN, CAN FD**
-- 🛡️ Proper automotive-grade input protection for daily real-vehicle use
-- 🏭 The jump from hand-soldered prototype to a manufacturable board
+-  **Native USB** transport (drop the FT232H, cut latency to the minimum)
+-  **29-bit extended IDs** + dynamic CAN baud switching
+-  Wider protocol coverage: **K-line, SWCAN, CAN FD**
+-  Proper automotive-grade input protection for daily real-vehicle use
+-  The jump from hand-soldered prototype to a manufacturable board
 
 ### Ways to support
-- ⭐ **Star this repo**, free, and it genuinely helps visibility
-- 💛 **GitHub Sponsors:** [github.com/sponsors/gorevyoneticisi](https://github.com/sponsors/gorevyoneticisi)
-- ☕ **Revolut:** [revolut.me/gorevyoneticisi](https://revolut.me/gorevyoneticisi) · **PayPal:** [paypal.me/gorevyoneticisi](https://paypal.me/gorevyoneticisi)
+-  **Star this repo**, free, and it genuinely helps visibility
+-  **GitHub Sponsors:** [github.com/sponsors/gorevyoneticisi](https://github.com/sponsors/gorevyoneticisi)
+-  **Revolut:** [revolut.me/gorevyoneticisi](https://revolut.me/gorevyoneticisi) · **PayPal:** [paypal.me/gorevyoneticisi](https://paypal.me/gorevyoneticisi)
 
 ### For companies, shops & inquiries
 Custom builds, integration help with a specific OEM tool, fleet/workshop deployments, or **sponsorship & partnership**, open an issue or reach out via GitHub. Serious inquiries are very welcome, and this project is actively looking for backers and collaborators to bring an affordable universal diagnostic interface to market.
-**Join the community:** Come hang out on Discord, share your setup, ask questions, or help shape v2/v3. [Join the Discord server](https://discord.gg/mw6V8P4) 🚀
+**Join the community:** Come hang out on Discord, share your setup, ask questions, or help shape v2/v3. [Join the Discord server](https://discord.gg/mw6V8P4) 
 
 ---
 
