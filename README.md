@@ -585,7 +585,7 @@ Funding goes straight into hardware, not coffee:
 
 ### For companies, shops & inquiries
 Custom builds, integration help with a specific OEM tool, fleet/workshop deployments, or **sponsorship & partnership**, open an issue or reach out via GitHub. Serious inquiries are very welcome, and this project is actively looking for backers and collaborators to bring an affordable universal diagnostic interface to market.
-**Join the community:** Come hang out on Discord, share your setup, ask questions, or help shape v2/v3. [@gorevyoneticisi on Discord](https://discord.gg/gorevyoneticisi) 🚀
+**Join the community:** Come hang out on Discord, share your setup, ask questions, or help shape v2/v3. [Join the Discord server](https://discord.gg/mw6V8P4) 🚀
 
 ---
 
