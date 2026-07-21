@@ -1,6 +1,6 @@
 # Taskmanager J2534 Bridge
 
-[![Build J2534 DLL](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml/badge.svg)](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml)
+[[Build J2534 DLL](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml/badge.svg)](https://github.com/gorevyoneticisi/taskmanager-j2534/actions/workflows/build.yml)
 ![Standard](https://img.shields.io/badge/SAE_J2534--1-v04.04-blue)
 ![Protocols](https://img.shields.io/badge/CAN_%2F_ISO15765-supported-success)
 ![Techstream](https://img.shields.io/badge/Toyota_Techstream-connected-brightgreen)
@@ -8,11 +8,15 @@
 
 > ### One open cable. The real dealer software. A fraction of the price.
 >
-> Most professional diagnostic interfaces lock you to one brand and cost **$300–$500 each**. The Taskmanager J2534 Bridge is a single, open, galvanically-isolated adapter that speaks the **universal J2534 standard the OEM tools already use** — so the *actual dealer software* talks to the car through hardware you can build and own.
+> Most professional diagnostic interfaces lock you to one brand and cost **$300–$500 each**. The Taskmanager J2534 Bridge is a single, open, galvanically-isolated adapter that speaks the **universal J2534 standard the OEM tools already use**, so the *actual dealer software* talks to the car through hardware you can build and own.
 
 <p align="center">
-  <img src="images/20260430_175219.jpg" alt="Taskmanager J2534 Bridge — hand-built prototype" width="600"><br>
-  <em>Hand-built prototype — STM32F407 + isolated CAN front-end — already running real OEM dealer software.</em>
+  <img src="images/adapter-hardware-prototype.jpg" alt="Taskmanager J2534 Bridge, hand-built prototype" width="600"><br>
+<p align=""center"">
+  <img src="images/techstream-corolla-2020.jpg" alt="Techstream running on Toyota Corolla 2020" width=""600""><br>
+  <em>Techstream connected to a 2020 Toyota Corolla, real ECU scan in progress.</em>
+</p>
+  <em>Prototype adapter, STM32F407 + FT232H + ADuM1201 + SN65HVD230, running Toyota Techstream on a real 2020 Corolla.</em>
 </p>
 
 <p align="center">
@@ -25,6 +29,13 @@
 </p>
 
 ---
+## In Active Development
+
+**v2 is live and being tested on real vehicles.** Toyota Techstream customization, K-line (ISO9141/ISO14230), 29-bit extended CAN IDs, dynamic baud-rate switching, and automatic COM-port detection are working.
+
+**Next up (v3):** DOIP (Diagnostics over IP), SWCAN (Single-Wire CAN for GM), CAN FD, and multi-bus support. The goal is one adapter that speaks every protocol.
+
+This public repository contains the **v1 firmware and DLL** (standard 11-bit CAN). The v2 DLL + firmware are in active development. Star this repo to follow along, or [open an issue](https://github.com/gorevyoneticisi/taskmanager-j2534/issues) if you want early access.
 
 A **CAN/ISO15765-focused SAE J2534-1 v04.04** PassThru DLL written in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to Windows diagnostic applications that support J2534 over CAN. No proprietary drivers, no locked hardware.
 
@@ -135,7 +146,7 @@ The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. F
 | SWCAN | Planned future hardware |
 | CAN FD | Planned future hardware |
 
-> **✅ (v2)** items are implemented and working in the current **v2 build** — 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection, and validated Toyota Techstream VIM connection. This public repository ships the **v1** firmware (standard 11-bit CAN); the v2 firmware + DLL are in active development ahead of a product launch. Interested in v2, early access, or a ready-to-run unit? See [Support & Sponsorship](#-support--sponsorship).
+> **✅ (v2)** items are implemented and working in the current **v2 build**, 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection, and validated Toyota Techstream VIM connection. This public repository ships the **v1** firmware (standard 11-bit CAN); the v2 firmware + DLL are in active development ahead of a product launch. Interested in v2, early access, or a ready-to-run unit? See [Support & Sponsorship](#-support--sponsorship).
 
 ---
 
@@ -555,11 +566,11 @@ Use the simulator for development and bench validation before connecting the ada
 
 ## 💛 Support & Sponsorship
 
-This is an independent, self-funded project. Every board was bought, soldered, and debugged by one engineer who didn't accept that diagnosing your own car should cost €500 per brand — and who got the *real* dealer software (Toyota Techstream, VW ODIS, Ford IDS) running on an open, isolated adapter that anyone can understand.
+This is an independent, self-funded project. Every board was bought, soldered, and debugged by one engineer who didn't accept that diagnosing your own car should cost €500 per brand, and who got the *real* dealer software (Toyota Techstream, VW ODIS, Ford IDS) running on an open, isolated adapter that anyone can understand.
 
 If this saved you a dealership bill, or you simply believe vehicle diagnostics should be open and affordable, your support pushes the project to the next milestone.
 
-### What sponsorship unlocks — Hardware v2
+### What sponsorship unlocks, Hardware v2
 Funding goes straight into hardware, not coffee:
 - 🔌 **Native USB** transport (drop the FT232H, cut latency to the minimum)
 - 🆔 **29-bit extended IDs** + dynamic CAN baud switching
@@ -568,12 +579,13 @@ Funding goes straight into hardware, not coffee:
 - 🏭 The jump from hand-soldered prototype to a manufacturable board
 
 ### Ways to support
-- ⭐ **Star this repo** — free, and it genuinely helps visibility
+- ⭐ **Star this repo**, free, and it genuinely helps visibility
 - 💛 **GitHub Sponsors:** [github.com/sponsors/gorevyoneticisi](https://github.com/sponsors/gorevyoneticisi)
 - ☕ **Revolut:** [revolut.me/gorevyoneticisi](https://revolut.me/gorevyoneticisi) · **PayPal:** [paypal.me/gorevyoneticisi](https://paypal.me/gorevyoneticisi)
 
 ### For companies, shops & inquiries
-Custom builds, integration help with a specific OEM tool, fleet/workshop deployments, or **sponsorship & partnership** — open an issue or reach out via GitHub. Serious inquiries are very welcome, and this project is actively looking for backers and collaborators to bring an affordable universal diagnostic interface to market. 🚀
+Custom builds, integration help with a specific OEM tool, fleet/workshop deployments, or **sponsorship & partnership**, open an issue or reach out via GitHub. Serious inquiries are very welcome, and this project is actively looking for backers and collaborators to bring an affordable universal diagnostic interface to market.
+**Join the community:** Come hang out on Discord, share your setup, ask questions, or help shape v2/v3. [@gorevyoneticisi on Discord](https://discord.gg/gorevyoneticisi) 🚀
 
 ---
 
