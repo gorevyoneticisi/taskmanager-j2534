@@ -45,8 +45,11 @@ jobs:
         include:
         - language: actions
           build-mode: none
+        # The STM32 project is generated for vendor IDE toolchains, so GitHub's
+        # generic Linux autobuilder cannot detect a supported root build system.
+        # No-build analysis still covers the checked-in C/C++ translation units.
         - language: c-cpp
-          build-mode: autobuild
+          build-mode: none
         - language: csharp
           build-mode: none
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
@@ -59,7 +62,7 @@ jobs:
         # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     # Add any setup steps before running the `github/codeql-action/init` action.
     # This includes steps like installing compilers or runtimes (`actions/setup-node`
