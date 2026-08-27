@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <b><a href="https://github.com/sponsors/gorevyoneticisi"> Sponsor the build</a> &nbsp;•&nbsp; <a href="#-support--sponsorship"> Partner / Inquire</a> &nbsp;•&nbsp;  Star to follow along</b>
+  <b><a href="#support--sponsorship">Support the build</a> &nbsp;•&nbsp; <a href="#support--sponsorship">Partner / Inquire</a> &nbsp;•&nbsp; Star to follow along</b>
 </p>
 
 ---
@@ -102,9 +102,14 @@ VCDS by Ross-Tech requires their own proprietary HEX-NET or HEX-V2 hardware. It 
 
 ### Why some vehicles in the list may not work
 
-This adapter currently supports **CAN and ISO15765 only**. It does not support K-line (ISO9141 / ISO14230 KWP2000), J1850, SWCAN, CAN FD, or DoIP. If your specific vehicle or module uses one of those protocols, the adapter will not communicate with that module even if the diagnostic software itself supports J2534.
+The public v1 adapter supports **CAN and ISO15765 only**. It does not support
+K-line, J1850, SWCAN, CAN FD, or DoIP. Private v2 adds working K-line
+(ISO9141/ISO14230) support; the other physical layers remain on the roadmap. If
+your vehicle or module requires a protocol unavailable in the release you are
+using, the adapter will not communicate with that module even when the
+diagnostic software itself supports J2534.
 
-Examples of what will not work on unsupported vehicles:
+Examples that the public v1 release will not cover:
 - Honda pre-2008 K-line ECUs with i-HDS
 - Older Subaru vehicles using the proprietary SSM3 serial protocol
 - Older FCA vehicles using K-line with MultiECUScan
@@ -147,12 +152,17 @@ the diagnostic gateway are outside the supported scope of this release.
 | Dynamic CAN baud-rate switching |  Supported (v2) |
 | Automatic adapter / COM-port detection |  Supported (v2) |
 | Toyota Techstream VIM connection |  Confirmed (v2) |
-| K-line / ISO9141 / ISO14230 | Planned future hardware |
+| K-line / ISO9141 / ISO14230 | Supported (v2) |
 | J1850 PWM / VPW | Planned future hardware |
 | SWCAN | Planned future hardware |
 | CAN FD | Planned future hardware |
 
-> ** (v2)** items are implemented and working in the current **v2 build**, 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection, and validated Toyota Techstream VIM connection. This public repository ships the **v1** firmware (standard 11-bit CAN); the v2 firmware + DLL are in active development ahead of a product launch. Interested in v2, early access, or a ready-to-run unit? See [Support & Sponsorship](#-support--sponsorship).
+> **(v2)** items are implemented in the current private **v2 build**: K-line,
+> 29-bit extended IDs, runtime CAN baud switching, automatic adapter detection,
+> and a validated Toyota Techstream VIM connection. This public repository ships
+> the **v1** firmware and DLL; v2 remains in active development and real-vehicle
+> validation ahead of a product release. Interested in v2, early access, or a
+> ready-to-run unit? See [Support & Sponsorship](#support--sponsorship).
 
 ---
 
@@ -397,14 +407,14 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 
 ### Honda i-HDS / HDS
 - Expected over CAN/ISO15765 for vehicles from approximately 2008 onward
-- Older K-line vehicles are not supported
+- Older K-line vehicles are not supported by public v1; private v2 adds K-line support
 
 ### Nissan Consult III Plus
 - Expected over CAN/ISO15765 on CAN vehicles
 
 ### FCA wiTECH 2.0 / MultiECUScan
 - Modern CAN vehicles are expected to work
-- K-line FCA vehicles are not supported
+- K-line FCA vehicles are not supported by public v1; private v2 adds K-line support
 
 ### PSA DiagBox / Volvo VIDA / Mazda MDARS
 - Expected over standard J2534 CAN/ISO15765 where the vehicle uses CAN diagnostics
@@ -418,7 +428,7 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 
 ### Jaguar / Land Rover Pathfinder / SDD
 - Modern CAN vehicles are expected to work
-- Pre-CAN vehicles require K-line, which is not supported
+- Pre-CAN vehicles that require K-line need the private v2 implementation
 
 ### Porsche PIWIS III
 - Expected only where PIWIS is configured to use a standard J2534 CAN interface
@@ -429,7 +439,9 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 
 ### Current protocol scope
 
-This project currently targets **CAN and ISO15765**. It does not currently implement K-line, J1850, SWCAN, CAN FD, DoIP, or brand-specific proprietary serial protocols. Those require additional hardware, firmware work, and validation.
+The public v1 release targets **CAN and ISO15765**. Private v2 adds working
+K-line support. J1850, SWCAN, CAN FD, DoIP, and brand-specific proprietary
+serial protocols remain outside the currently validated feature set.
 
 ### USB polling latency in the ISO-TP path
 
@@ -549,14 +561,13 @@ If this saved you a dealership bill, or you simply believe vehicle diagnostics s
 Funding goes straight into hardware, not coffee:
 -  **Native USB** transport (drop the FT232H, cut latency to the minimum)
 -  **29-bit extended IDs** + dynamic CAN baud switching
--  Wider protocol coverage: **K-line, SWCAN, CAN FD**
+-  Broader real-vehicle validation for **K-line** and future **SWCAN / CAN FD** development
 -  Proper automotive-grade input protection for daily real-vehicle use
 -  The jump from hand-soldered prototype to a manufacturable board
 
 ### Ways to support
 -  **Star this repo**, free, and it genuinely helps visibility
--  **GitHub Sponsors:** [github.com/sponsors/gorevyoneticisi](https://github.com/sponsors/gorevyoneticisi)
--  **Revolut:** [revolut.me/gorevyoneticisi](https://revolut.me/gorevyoneticisi) · **PayPal:** [paypal.me/gorevyoneticisi](https://paypal.me/gorevyoneticisi)
+-  **Revolut:** [revolut.me/gorev_yoneticisi](https://revolut.me/gorev_yoneticisi) · **PayPal:** [paypal.me/gorevyoneticisi](https://paypal.me/gorevyoneticisi)
 
 ### For companies, shops & inquiries
 Custom builds, integration help with a specific OEM tool, fleet/workshop deployments, or **sponsorship & partnership**, open an issue or reach out via GitHub. Serious inquiries are very welcome, and this project is actively looking for backers and collaborators to bring an affordable universal diagnostic interface to market.
