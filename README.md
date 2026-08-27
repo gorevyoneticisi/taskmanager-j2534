@@ -6,17 +6,18 @@
 ![Techstream](https://img.shields.io/badge/Toyota_Techstream-connected-brightgreen)
 ![Platform](https://img.shields.io/badge/Windows-7_%E2%86%92_11-informational)
 
-> ### One open cable. The real dealer software. A fraction of the price.
+> ### One independent cable. The real dealer software. A fraction of the price.
 >
-> Most professional diagnostic interfaces lock you to one brand and cost **$300–$500 each**. The Taskmanager J2534 Bridge is a single, open, galvanically-isolated adapter that speaks the **universal J2534 standard the OEM tools already use**, so the *actual dealer software* talks to the car through hardware you can build and own.
+> Most professional diagnostic interfaces lock you to one brand and cost **$300–$500 each**. The Taskmanager J2534 Bridge is a single, galvanically-isolated adapter that speaks the **universal J2534 standard the OEM tools already use**, so the *actual dealer software* talks to the car through hardware you can build for personal, non-commercial use under the repository license.
 
 <p align="center">
   <img src="images/adapter-hardware-prototype.jpg" alt="Taskmanager J2534 Bridge, hand-built prototype" width="600"><br>
-<p align=""center"">
-  <img src="images/techstream-corolla-2020.jpg" alt="Techstream running on Toyota Corolla 2020" width=""600""><br>
-  <em>Techstream connected to a 2020 Toyota Corolla, real ECU scan in progress.</em>
-</p>
   <em>Prototype adapter, STM32F407 + FT232H + ADuM1201 + SN65HVD230, running Toyota Techstream on a real 2020 Corolla.</em>
+</p>
+
+<p align="center">
+  <img src="images/techstream-corolla-2020.jpg" alt="Techstream running on Toyota Corolla 2020" width="600"><br>
+  <em>Techstream connected to a 2020 Toyota Corolla, real ECU scan in progress.</em>
 </p>
 
 <p align="center">
@@ -36,6 +37,10 @@
 **Next up (v3):** DOIP (Diagnostics over IP), SWCAN (Single-Wire CAN for GM), CAN FD, and multi-bus support. The goal is one adapter that speaks every protocol.
 
 This public repository contains the **v1 firmware and DLL** (standard 11-bit CAN). The v2 DLL + firmware are in active development. Star this repo to follow along, or [open an issue](https://github.com/gorevyoneticisi/taskmanager-j2534/issues) if you want early access.
+
+The published source is **source-available, not open source**. The license permits
+viewing and personal, non-commercial builds; it does not permit redistribution,
+derivative works, or commercial use without written permission.
 
 A **CAN/ISO15765-focused SAE J2534-1 v04.04** PassThru DLL written in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to Windows diagnostic applications that support J2534 over CAN. No proprietary drivers, no locked hardware.
 
@@ -113,7 +118,8 @@ GDS2 communicates over SWCAN (Single Wire CAN at 33.3 kbps) for some GM-specific
 
 ### CAN FD vehicles
 
-The SN65HVD230 transceiver and STM32F407 CAN peripheral do not support CAN FD. For vehicles that require CAN FD at the diagnostic gateway, hardware v2 will require an MCU with an FDCAN peripheral, such as STM32G4/STM32H7, and a CAN FD capable transceiver.
+The public v1 hardware does not support CAN FD. Vehicles that require CAN FD at
+the diagnostic gateway are outside the supported scope of this release.
 
 ---
 
@@ -265,32 +271,11 @@ Byte:  0      1      2      3      4 ... 3+N   4+N
 - `XOR` = `ID_H ^ ID_L ^ D0 ^ ... ^ Dn`
 - The DLL verifies XOR and silently drops frames that fail the check
 
-### Firmware v2 (planned, 29-bit IDs + baud rate switching + RX checksum)
+### Private v2 development boundary
 
-**PC to STM32** (send CAN frame, 4-byte ID):
-
-```text
-Byte:  0      1      2      3      4      5      6      7 ... 6+N   7+N
-       0xAA   0x01   ID3    ID2    ID1    ID0    LEN    D0 ... Dn   XOR
-```
-
-**PC to STM32** (set CAN baud rate):
-
-```text
-Byte:  0      1      2      3      4      5      6
-       0xAA   0x02   B3     B2     B1     B0     XOR
-```
-
-**STM32 to PC** (received CAN frame, with checksum):
-
-```text
-Byte:  0      1      2      3      4      5      6      7 ... 6+N   7+N
-       0xBB   LEN    ID3    ID2    ID1    ID0    D0 ... Dn   XOR
-```
-
-- `XOR` = `ID3 ^ ID2 ^ ID1 ^ ID0 ^ D0 ^ ... ^ Dn`
-- Bit 7 of ID3 set = 29-bit extended CAN frame
-- DLL verifies XOR and drops corrupted frames
+The public repository documents v2 only at the feature and validation level.
+Its wire format, schematics, firmware, DLL implementation, and integration
+details remain private while the product is in development.
 
 ---
 
@@ -463,7 +448,8 @@ The FT232H USB polling interval introduces 1-2 ms of latency per round trip. For
 
 ### CAN FD not supported
 
-The SN65HVD230 and STM32F407 CAN peripheral do not support CAN FD. Vehicles that require CAN FD at the diagnostic gateway need hardware v2 with an FDCAN-capable MCU and CAN FD transceiver.
+The public v1 hardware does not support CAN FD. Vehicles that require CAN FD at
+the diagnostic gateway are outside the supported scope of this release.
 
 ### Vehicle safety
 
@@ -471,22 +457,11 @@ This project is experimental. Do not use it for programming, flashing, immobiliz
 
 ---
 
-## Hardware v2 Upgrade Path
+## Private v2 Roadmap
 
-The single highest-impact improvement for hardware v2 is removing the FT232H entirely.
-
-The STM32F407 has a native Full-Speed USB 2.0 peripheral (12 Mbit/s) built into the silicon. By programming the STM32 as a WinUSB Bulk endpoint or USB CDC device, the PC talks directly to the MCU over USB. The UART baud rate limit disappears, the FT232H chip is removed from the BOM, and latency drops to the minimum the Windows USB stack allows. That architecture is closer to how professional dealership tools handle high-throughput diagnostic traffic.
-
-Planned hardware/firmware improvements:
-- Native USB transport
-- 29-bit extended CAN IDs
-- Dynamic CAN baud-rate switching
-- Additional CAN channel
-- SWCAN support
-- K-line / L-line support
-- CAN FD support
-- Better input protection for real vehicle use
-- Firmware version reporting and update mechanism
+Development continues privately. Public updates will disclose supported
+features, compatibility results, and release status—not implementation details.
+The current public release remains the v1 CAN/ISO15765 design documented above.
 
 ---
 
@@ -566,7 +541,7 @@ Use the simulator for development and bench validation before connecting the ada
 
 ##  Support & Sponsorship
 
-This is an independent, self-funded project. Every board was bought, soldered, and debugged by one engineer who didn't accept that diagnosing your own car should cost €500 per brand, and who got the *real* dealer software (Toyota Techstream, VW ODIS, Ford IDS) running on an open, isolated adapter that anyone can understand.
+This is an independent, self-funded project. Every board was bought, soldered, and debugged by one engineer who didn't accept that diagnosing your own car should cost €500 per brand, and who got the *real* dealer software (Toyota Techstream, VW ODIS, Ford IDS) running on an isolated, source-available adapter.
 
 If this saved you a dealership bill, or you simply believe vehicle diagnostics should be open and affordable, your support pushes the project to the next milestone.
 
