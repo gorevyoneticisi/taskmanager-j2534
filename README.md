@@ -44,10 +44,14 @@ derivative works, or commercial use without written permission.
 
 A **CAN/ISO15765-focused SAE J2534-1 v04.04** PassThru DLL written in C# (.NET Framework 4.7.2, x86) that connects a custom STM32F407-based CAN adapter to Windows diagnostic applications that support J2534 over CAN. No proprietary drivers, no locked hardware.
 
-**Confirmed working with:**
+**Confirmed working with** (connected and read data on real vehicles; coding, programming and flashing are not validated):
 - Toyota Techstream
 - VW ODIS 25
 - Ford IDS
+- FORScan
+- Mercedes-Benz XENTRY
+- Nissan Consult III Plus
+- BMW ISTA-D (K-line and L-line on a 2004 BMW 118i, private v2 build)
 
 **Expected compatible with:**
 - CAN/ISO15765-based J2534-1 v04.04 diagnostic applications
@@ -69,21 +73,21 @@ Every commercial J2534 interface ships with a proprietary DLL that locks you to 
 
 The current adapter supports **CAN and ISO15765 (UDS)**. Any diagnostic tool that uses J2534 to communicate over those protocols on modern vehicles is a realistic target for compatibility.
 
-Confirmed means the tool has been tested with this project. Expected means the tool should work when it uses standard J2534 CAN/ISO15765, but has not yet been fully validated across vehicles and modules.
+Confirmed means the maintainer has tested the tool on a real vehicle with this project's adapter: connection established and data read. Coding, programming and flashing have not been validated. The public v1 release covers CAN/ISO15765; the BMW K-line/L-line result comes from the private v2 build. Expected means the tool should work when it uses standard J2534 CAN/ISO15765, but has not yet been fully validated across vehicles and modules.
 
 | Manufacturer | Tool | J2534 | Status |
 |---|---|---|---|
 | Toyota / Lexus / Scion | Techstream | Yes | **Confirmed** |
 | VW / Audi / Seat / Skoda / Bentley | ODIS | Yes | **Confirmed** |
 | Ford / Lincoln | IDS | Yes | **Confirmed** |
-| BMW / Mini / Rolls Royce | ISTA-D, ISTA-P | Yes | **Expected** - CAN vehicles |
-| Mercedes-Benz / Smart | XENTRY / DAS | Yes | **Expected** - CAN vehicles |
+| BMW / Mini / Rolls Royce | ISTA-D, ISTA-P | Yes | **Confirmed** - ISTA-D over K-line and L-line, 2004 BMW 118i (private v2). ISTA-P: Expected |
+| Mercedes-Benz / Smart | XENTRY / DAS | Yes | **Confirmed** (XENTRY) - CAN vehicles |
 | Ford / Lincoln | FDRS | Yes | **Expected** - CAN vehicles |
-| Ford / Lincoln (3rd party) | FORScan | Yes | **Expected** - CAN vehicles |
+| Ford / Lincoln (3rd party) | FORScan | Yes | **Confirmed** - CAN vehicles |
 | GM (Chevrolet / GMC / Buick / Cadillac) | GDS2 | Yes | **Expected** - standard CAN modules |
 | GM | Tech2Win | Yes | **Expected** - standard CAN modules |
 | Honda / Acura | i-HDS, HDS | Yes | **Expected** - CAN vehicles |
-| Nissan / Infiniti | Consult III Plus | Yes | **Expected** - CAN vehicles |
+| Nissan / Infiniti | Consult III Plus | Yes | **Confirmed** - CAN vehicles |
 | FCA (Chrysler / Dodge / Jeep / Ram / Fiat / Alfa) | wiTECH 2.0 | Yes | **Expected** - CAN vehicles |
 | FCA (3rd party) | MultiECUScan | Yes | **Expected** - CAN vehicles |
 | PSA (Peugeot / Citroen) | DiagBox | Yes | **Expected** - CAN vehicles |
@@ -393,13 +397,13 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 ### BMW ISTA-D / ISTA-P
 - Calls `SET_CONFIG(ISO15765_FRAME_PAD_VAL)` to configure the padding byte
 - The DLL supports this parameter per channel, defaulting to 0xCC; ISTA typically sets 0x00
-- Expected to work with ISTA on CAN vehicles
+- Confirmed with ISTA-D over K-line and L-line on a 2004 BMW 118i (private v2 build); expected on CAN vehicles with the public v1 build
 - Vehicles requiring DoIP are not supported
 
 ### Mercedes-Benz XENTRY / DAS
 - Standard J2534 v04.04 over CAN/ISO15765
 - Requires valid battery voltage from `READ_VBATT`
-- Expected on CAN vehicles
+- Confirmed (XENTRY, connect and read) on CAN vehicles
 
 ### GM GDS2 / Tech2Win
 - Standard CAN and ISO15765 diagnostics are expected to work
@@ -410,7 +414,7 @@ Remove-Item "HKLM:\SOFTWARE\WOW6432Node\PassThruSupport.04.04\Taskmanager J2534 
 - Older K-line vehicles are not supported by public v1; private v2 adds K-line support
 
 ### Nissan Consult III Plus
-- Expected over CAN/ISO15765 on CAN vehicles
+- Confirmed over CAN/ISO15765 (connect and read)
 
 ### FCA wiTECH 2.0 / MultiECUScan
 - Modern CAN vehicles are expected to work
